@@ -1,0 +1,372 @@
+// Prisma schema - Sistem Informasi Prodi (PPs UM Metro)
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  ADMIN_SISTEM
+  ADMIN_PRODI
+  KAPRODI
+  WAKIL_DIREKTUR
+  DIREKTUR
+  DOSEN
+  MAHASISWA
+}
+
+enum LetterType {
+  AKTIF_KULIAH
+  IZIN_PENELITIAN
+  CUTI_AKADEMIK
+  PENGANTAR_SKPI
+  BEBAS_PLAGIASI
+}
+
+enum RequestStatus {
+  DRAFT
+  SUBMITTED
+  VERIFIED
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+enum TesisStage {
+  JUDUL
+  PROPOSAL
+  SEMINAR_PROPOSAL
+  BIMBINGAN
+  KUT
+  SIDANG
+  REVISI
+  SELESAI
+}
+
+enum SidangResult {
+  BELUM
+  LULUS
+  LULUS_DENGAN_REVISI
+  TIDAK_LULUS
+}
+
+enum SidangMode {
+  OFFLINE
+  ONLINE
+}
+
+enum DocumentKind {
+  SURAT
+  SK_PEMBIMBING
+  SK_SIDANG
+  UNDANGAN_SEMINAR
+  UNDANGAN_SIDANG
+  BERITA_ACARA_SEMINAR
+  BERITA_ACARA_SIDANG
+  LEMBAR_PENGESAHAN
+  LAINNYA
+}
+
+model Prodi {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String
+  jenjang   String   @default("S2")
+  kaprodi   User?    @relation("ProdiKaprodi", fields: [kaprodiId], references: [id])
+  kaprodiId String?  @unique
+  users     User[]   @relation("ProdiUsers")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model User {
+  id              String   @id @default(cuid())
+  email           String   @unique
+  nimNip          String   @unique
+  name            String
+  hashedPassword  String
+  role            Role
+  prodiId         String?
+  prodi           Prodi?   @relation("ProdiUsers", fields: [prodiId], references: [id])
+  isActive        Boolean  @default(true)
+  phone           String?
+  address         String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  prodiKaprodiOf  Prodi?   @relation("ProdiKaprodi")
+
+  mahasiswaProfile MahasiswaProfile?
+  dosenProfile     DosenProfile?
+
+  lettersAsMhs    LetterRequest[] @relation("LetterMahasiswa")
+  lettersHandled  LetterRequest[] @relation("LetterHandler")
+
+  tesisAsMhs      Tesis?          @relation("TesisMahasiswa")
+  paOf            Tesis[]         @relation("TesisDosenPA")
+  pembimbingProposalOf Tesis[]    @relation("TesisPembimbingProposal")
+  pembimbing1Of   Tesis[]         @relation("TesisPembimbing1")
+  pembimbing2Of   Tesis[]         @relation("TesisPembimbing2")
+
+  notifications   Notification[]
+  auditLogs       AuditLog[]
+  signedDocs      SignedDocument[]
+
+  bimbinganLogs   BimbinganLog[]  @relation("BimbinganDosen")
+  pengujiOf       SidangPenguji[]
+}
+
+model MahasiswaProfile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  angkatan    Int
+  semester    Int      @default(1)
+  sksLulus    Int      @default(0)
+  lulusMetpen Boolean  @default(false)
+  paId        String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model DosenProfile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nidn        String?
+  jabatan     String?
+  bidang      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model LetterRequest {
+  id            String         @id @default(cuid())
+  nomor         String?        @unique
+  type          LetterType
+  status        RequestStatus  @default(SUBMITTED)
+  mahasiswa     User           @relation("LetterMahasiswa", fields: [mahasiswaId], references: [id])
+  mahasiswaId   String
+  handler       User?          @relation("LetterHandler", fields: [handlerId], references: [id])
+  handlerId     String?
+  payload       Json
+  attachments   Attachment[]
+  signedDocId   String?        @unique
+  signedDoc     SignedDocument? @relation(fields: [signedDocId], references: [id])
+  rejectReason  String?
+  timeline      RequestTimeline[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model RequestTimeline {
+  id            String        @id @default(cuid())
+  letter        LetterRequest? @relation(fields: [letterId], references: [id], onDelete: Cascade)
+  letterId      String?
+  tesis         Tesis?        @relation(fields: [tesisId], references: [id], onDelete: Cascade)
+  tesisId       String?
+  stage         String
+  note          String?
+  actorId       String?
+  createdAt     DateTime      @default(now())
+}
+
+model Attachment {
+  id            String         @id @default(cuid())
+  url           String
+  name          String
+  mimeType      String?
+  size          Int?
+  letter        LetterRequest? @relation(fields: [letterId], references: [id], onDelete: Cascade)
+  letterId      String?
+  tesis         Tesis?         @relation(fields: [tesisId], references: [id], onDelete: Cascade)
+  tesisId       String?
+  bimbinganLog  BimbinganLog?  @relation(fields: [bimbinganLogId], references: [id], onDelete: Cascade)
+  bimbinganLogId String?
+  revisi        TesisRevisi?   @relation(fields: [revisiId], references: [id], onDelete: Cascade)
+  revisiId      String?
+  createdAt     DateTime       @default(now())
+}
+
+model Tesis {
+  id              String        @id @default(cuid())
+  mahasiswa       User          @relation("TesisMahasiswa", fields: [mahasiswaId], references: [id])
+  mahasiswaId     String        @unique
+  judul1          String?
+  judul2          String?
+  judulFinal      String?
+  paId            String?
+  pa              User?         @relation("TesisDosenPA", fields: [paId], references: [id])
+  pembimbingProposalId String?
+  pembimbingProposal   User?    @relation("TesisPembimbingProposal", fields: [pembimbingProposalId], references: [id])
+  pembimbing1Id   String?
+  pembimbing1     User?         @relation("TesisPembimbing1", fields: [pembimbing1Id], references: [id])
+  pembimbing2Id   String?
+  pembimbing2     User?         @relation("TesisPembimbing2", fields: [pembimbing2Id], references: [id])
+  skBimbinganNo   String?
+  skBimbinganDocId String?      @unique
+  skBimbinganDoc  SignedDocument? @relation("SKBimbingan", fields: [skBimbinganDocId], references: [id])
+  stage           TesisStage    @default(JUDUL)
+  judulStatus     RequestStatus @default(DRAFT)
+  proposalUrl     String?
+  seminars        SeminarProposal[]
+  bimbinganLogs   BimbinganLog[]
+  kut             KUT?
+  sidang          SidangTesis?
+  revisi          TesisRevisi[]
+  attachments     Attachment[]
+  timeline        RequestTimeline[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model SeminarProposal {
+  id            String        @id @default(cuid())
+  tesis         Tesis         @relation(fields: [tesisId], references: [id], onDelete: Cascade)
+  tesisId       String
+  jadwal        DateTime
+  ruang         String?
+  undanganDocId String?       @unique
+  undanganDoc   SignedDocument? @relation("UndanganSeminar", fields: [undanganDocId], references: [id])
+  hasil         SidangResult  @default(BELUM)
+  catatan       String?
+  deadlineRevisi DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model BimbinganLog {
+  id            String        @id @default(cuid())
+  tesis         Tesis         @relation(fields: [tesisId], references: [id], onDelete: Cascade)
+  tesisId       String
+  dosen         User          @relation("BimbinganDosen", fields: [dosenId], references: [id])
+  dosenId       String
+  tanggal       DateTime
+  topik         String
+  catatan       String?
+  attachments   Attachment[]
+  approved      Boolean       @default(false)
+  createdAt     DateTime      @default(now())
+}
+
+model KUT {
+  id                String        @id @default(cuid())
+  tesis             Tesis         @relation(fields: [tesisId], references: [id], onDelete: Cascade)
+  tesisId           String        @unique
+  p1Approved        Boolean       @default(false)
+  p1ApprovedAt      DateTime?
+  p2Approved        Boolean       @default(false)
+  p2ApprovedAt      DateTime?
+  kaprodiApproved   Boolean       @default(false)
+  kaprodiApprovedAt DateTime?
+  notes             String?
+  status            RequestStatus @default(SUBMITTED)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+}
+
+model SidangTesis {
+  id              String        @id @default(cuid())
+  tesis           Tesis         @relation(fields: [tesisId], references: [id], onDelete: Cascade)
+  tesisId         String        @unique
+  jadwal          DateTime
+  ruang           String?
+  mode            SidangMode    @default(OFFLINE)
+  skNomor         String?
+  skDocId         String?       @unique
+  skDoc           SignedDocument? @relation("SKSidang", fields: [skDocId], references: [id])
+  undanganDocId   String?       @unique
+  undanganDoc     SignedDocument? @relation("UndanganSidang", fields: [undanganDocId], references: [id])
+  hasil           SidangResult  @default(BELUM)
+  nilaiAkhir      Float?
+  catatan         String?
+  deadlineRevisi  DateTime?
+  penguji         SidangPenguji[]
+  beritaAcaraDocId String?      @unique
+  beritaAcaraDoc  SignedDocument? @relation("BASidang", fields: [beritaAcaraDocId], references: [id])
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model SidangPenguji {
+  id          String        @id @default(cuid())
+  sidang      SidangTesis   @relation(fields: [sidangId], references: [id], onDelete: Cascade)
+  sidangId    String
+  dosen       User          @relation(fields: [dosenId], references: [id])
+  dosenId     String
+  peran       String
+  nilai       Float?
+  saran       String?
+  createdAt   DateTime      @default(now())
+
+  @@unique([sidangId, dosenId])
+}
+
+model TesisRevisi {
+  id          String        @id @default(cuid())
+  tesis       Tesis         @relation(fields: [tesisId], references: [id], onDelete: Cascade)
+  tesisId     String
+  fileUrl     String?
+  catatan     String?
+  deadline    DateTime?
+  approved    Boolean       @default(false)
+  attachments Attachment[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model SignedDocument {
+  id          String        @id @default(cuid())
+  code        String        @unique
+  kind        DocumentKind
+  nomor       String?
+  hash        String
+  signer      User          @relation(fields: [signerId], references: [id])
+  signerId    String
+  signerName  String
+  signerRole  Role
+  payload     Json
+  fileUrl     String?
+  qrUrl       String?
+  revoked     Boolean       @default(false)
+  signedAt    DateTime      @default(now())
+
+  letter          LetterRequest?    @relation
+  skBimbingan     Tesis?            @relation("SKBimbingan")
+  undanganSeminar SeminarProposal?  @relation("UndanganSeminar")
+  skSidang        SidangTesis?      @relation("SKSidang")
+  undanganSidang  SidangTesis?      @relation("UndanganSidang")
+  baSidang        SidangTesis?      @relation("BASidang")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  title     String
+  body      String?
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actor     User?    @relation(fields: [actorId], references: [id])
+  actorId   String?
+  action    String
+  entity    String?
+  entityId  String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+}
+
+model AppSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}
