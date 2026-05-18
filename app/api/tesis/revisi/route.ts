@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
-import { uploadBuffer } from "@/lib/storage";
+import { uploadBufferToSupabase } from "@/lib/storage";
 
 export async function POST(req: Request) {
   const session = await getSession();
@@ -23,7 +23,7 @@ export async function POST(req: Request) {
   const ab = await file.arrayBuffer();
   const buf = Buffer.from(ab);
   const path = `revisi/${session.uid}/${Date.now()}-${file.name}`;
-  const { url } = await uploadBuffer(
+  const { url } = await uploadBufferToSupabase(
     path,
     buf,
     file.type || "application/pdf",

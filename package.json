@@ -17,10 +17,10 @@
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.654.0",
-    "@aws-sdk/s3-request-presigner": "^3.654.0",
     "@hookform/resolvers": "^3.10.0",
     "@prisma/client": "^5.22.0",
+    "@supabase/ssr": "^0.10.3",
+    "@supabase/supabase-js": "^2.105.4",
     "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
