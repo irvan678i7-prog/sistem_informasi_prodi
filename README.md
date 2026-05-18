@@ -1,36 +1,68 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Sistem Informasi Prodi — PPs UM Metro
 
-## Getting Started
+Aplikasi internal Program Pascasarjana UM Metro untuk pengelolaan:
 
-First, run the development server:
+- Pengajuan dan penandatanganan surat (aktif kuliah, izin penelitian, cuti, SKPI, bebas plagiasi)
+- Alur tesis: judul → proposal → seminar → bimbingan → KUT → sidang → revisi
+- SK pembimbing, undangan, berita acara, dengan tanda tangan digital + QR verifikasi
+- Notifikasi, audit log, manajemen user & prodi multi-role
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Tech Stack
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- **Next.js 14** (App Router, Server Actions)
+- **PostgreSQL** di **Neon** (serverless, free tier)
+- **Prisma** ORM
+- **Supabase Storage** (bucket `documents`) — project terpisah
+- **Custom Auth**: JWT + bcrypt (cookie-based session)
+- **Tailwind CSS** + **Lucide Icons**
+- **pdf-lib** + **qrcode** untuk pembuatan & verifikasi dokumen
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Quick Start
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Clone repo & install deps
+   ```bash
+   git clone <repo-url>
+   cd sistem_informasi_prodi
+   npm install
+   ```
+2. Copy & isi env
+   ```bash
+   cp .env.example .env
+   ```
+3. Push schema + seed data
+   ```bash
+   npm run db:push
+   npm run db:seed
+   ```
+4. Run dev server
+   ```bash
+   npm run dev
+   ```
 
-## Learn More
+## Setup Lengkap
 
-To learn more about Next.js, take a look at the following resources:
+Untuk panduan setup detail (Neon + Supabase Storage + deploy), lihat **[SETUP.md](./SETUP.md)**.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Scripts
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Command            | Keterangan                                  |
+| ------------------ | ------------------------------------------- |
+| `npm run dev`      | Jalankan Next.js dev server                 |
+| `npm run build`    | Production build (auto run `prisma generate`)|
+| `npm run start`    | Jalankan production build                   |
+| `npm run lint`     | ESLint                                      |
+| `npm run typecheck`| TypeScript check                            |
+| `npm run db:push`  | Sync `prisma/schema.prisma` ke database     |
+| `npm run db:seed`  | Isi data awal (admin, dosen, mahasiswa)     |
 
-## Deploy on Vercel
+## Default Login (setelah seed)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| Role          | Email                       | Password         |
+| ------------- | --------------------------- | ---------------- |
+| Admin Sistem  | admin@ummetro.ac.id         | admin12345       |
+| Direktur      | direktur@ummetro.ac.id      | direktur12345    |
+| Kaprodi       | kaprodi.mmp@ummetro.ac.id   | kaprodi12345     |
+| Dosen         | dosen1@ummetro.ac.id        | dosen12345       |
+| Mahasiswa     | mhs1@ummetro.ac.id          | mahasiswa12345   |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+> **Wajib ganti** semua password default sebelum production.
