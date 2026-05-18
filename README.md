@@ -12,57 +12,45 @@ Aplikasi internal Program Pascasarjana UM Metro untuk pengelolaan:
 - **Next.js 14** (App Router, Server Actions)
 - **PostgreSQL** di **Neon** (serverless, free tier)
 - **Prisma** ORM
-- **Supabase Storage** (bucket `documents`) — project terpisah
+- **Cloudflare R2** untuk file storage (S3-compatible, free 10 GB)
 - **Custom Auth**: JWT + bcrypt (cookie-based session)
 - **Tailwind CSS** + **Lucide Icons**
 - **pdf-lib** + **qrcode** untuk pembuatan & verifikasi dokumen
 
 ## Quick Start
 
-1. Clone repo & install deps
-   ```bash
-   git clone <repo-url>
-   cd sistem_informasi_prodi
-   npm install
-   ```
-2. Copy & isi env
-   ```bash
-   cp .env.example .env
-   ```
-3. Push schema + seed data
-   ```bash
-   npm run db:push
-   npm run db:seed
-   ```
-4. Run dev server
-   ```bash
-   npm run dev
-   ```
+```bash
+git clone <repo-url>
+cd sistem_informasi_prodi
+npm install
+cp .env.example .env       # lalu isi sesuai SETUP.md
+npm run db:push
+npm run db:seed
+npm run dev
+```
 
-## Setup Lengkap
-
-Untuk panduan setup detail (Neon + Supabase Storage + deploy), lihat **[SETUP.md](./SETUP.md)**.
+Panduan setup lengkap (Neon + Cloudflare R2 + deploy): **[SETUP.md](./SETUP.md)**
 
 ## Scripts
 
-| Command            | Keterangan                                  |
-| ------------------ | ------------------------------------------- |
-| `npm run dev`      | Jalankan Next.js dev server                 |
-| `npm run build`    | Production build (auto run `prisma generate`)|
-| `npm run start`    | Jalankan production build                   |
-| `npm run lint`     | ESLint                                      |
-| `npm run typecheck`| TypeScript check                            |
-| `npm run db:push`  | Sync `prisma/schema.prisma` ke database     |
-| `npm run db:seed`  | Isi data awal (admin, dosen, mahasiswa)     |
+| Command             | Keterangan                                   |
+| ------------------- | -------------------------------------------- |
+| `npm run dev`       | Jalankan Next.js dev server                  |
+| `npm run build`     | Production build (auto run `prisma generate`)|
+| `npm run start`     | Jalankan production build                    |
+| `npm run lint`      | ESLint                                       |
+| `npm run typecheck` | TypeScript check                             |
+| `npm run db:push`   | Sync `prisma/schema.prisma` ke database      |
+| `npm run db:seed`   | Isi data awal                                |
 
 ## Default Login (setelah seed)
 
-| Role          | Email                       | Password         |
-| ------------- | --------------------------- | ---------------- |
-| Admin Sistem  | admin@ummetro.ac.id         | admin12345       |
-| Direktur      | direktur@ummetro.ac.id      | direktur12345    |
-| Kaprodi       | kaprodi.mmp@ummetro.ac.id   | kaprodi12345     |
-| Dosen         | dosen1@ummetro.ac.id        | dosen12345       |
-| Mahasiswa     | mhs1@ummetro.ac.id          | mahasiswa12345   |
+| Role         | Email                       | Password         |
+| ------------ | --------------------------- | ---------------- |
+| Admin Sistem | admin@ummetro.ac.id         | admin12345       |
+| Direktur     | direktur@ummetro.ac.id      | direktur12345    |
+| Kaprodi      | kaprodi.mmp@ummetro.ac.id   | kaprodi12345     |
+| Dosen        | dosen1@ummetro.ac.id        | dosen12345       |
+| Mahasiswa    | mhs1@ummetro.ac.id          | mahasiswa12345   |
 
 > **Wajib ganti** semua password default sebelum production.
