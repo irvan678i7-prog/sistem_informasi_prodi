@@ -20,42 +20,58 @@ export async function POST(req: Request) {
     );
   }
 
-  const user = await prisma.user.findFirst({
-    where: {
-      OR: [{ email: identifier }, { nimNip: identifier }],
-    },
-  });
-  if (!user || !user.isActive) {
+  try {
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [{ email: identifier }, { nimNip: identifier }],
+      },
+    });
+    if (!user || !user.isActive) {
+      return NextResponse.json(
+        { message: "Akun tidak ditemukan atau dinonaktifkan" },
+        { status: 401 },
+      );
+    }
+    const ok = await verifyPassword(password, user.hashedPassword);
+    if (!ok) {
+      return NextResponse.json({ message: "Password salah" }, { status: 401 });
+    }
+    if (scope === "admin" && user.role !== "ADMIN") {
+      return NextResponse.json(
+        { message: "Akun ini bukan administrator" },
+        { status: 403 },
+      );
+    }
+    const token = signSession({
+      uid: user.id,
+      role: user.role,
+      name: user.name,
+      nimNip: user.nimNip,
+    });
+    await setSessionCookie(token);
+    // Audit log tidak boleh menggagalkan login kalau penulisan logging error.
+    try {
+      await prisma.auditLog.create({
+        data: {
+          actorId: user.id,
+          action: "LOGIN",
+          entity: "User",
+          entityId: user.id,
+          metadata: { scope },
+        },
+      });
+    } catch (logErr) {
+      console.error("[auth/login] gagal menulis audit log:", logErr);
+    }
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error("[auth/login] error:", err);
     return NextResponse.json(
-      { message: "Akun tidak ditemukan atau dinonaktifkan" },
-      { status: 401 },
+      {
+        message:
+          "Terjadi kesalahan pada server. Periksa konfigurasi database/koneksi.",
+      },
+      { status: 500 },
     );
   }
-  const ok = await verifyPassword(password, user.hashedPassword);
-  if (!ok) {
-    return NextResponse.json({ message: "Password salah" }, { status: 401 });
-  }
-  if (scope === "admin" && user.role !== "ADMIN") {
-    return NextResponse.json(
-      { message: "Akun ini bukan administrator" },
-      { status: 403 },
-    );
-  }
-  const token = signSession({
-    uid: user.id,
-    role: user.role,
-    name: user.name,
-    nimNip: user.nimNip,
-  });
-  await setSessionCookie(token);
-  await prisma.auditLog.create({
-    data: {
-      actorId: user.id,
-      action: "LOGIN",
-      entity: "User",
-      entityId: user.id,
-      metadata: { scope },
-    },
-  });
-  return NextResponse.json({ ok: true });
 }

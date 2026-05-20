@@ -24,17 +24,51 @@ export function LoginForm({ scope }: { scope: "user" | "admin" }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ identifier, password, scope }),
       });
-      const data = await res.json();
+
+      // Parse body dengan aman: kalau bukan JSON / kosong, jangan crash.
+      const raw = await res.text();
+      let data: { message?: string; ok?: boolean } = {};
+      if (raw) {
+        try {
+          data = JSON.parse(raw);
+        } catch {
+          data = {};
+        }
+      }
+
       if (!res.ok) {
-        setErr(data.message || "Gagal login");
+        // Pesan spesifik berdasarkan status, fallback ke pesan dari server.
+        let msg = data.message;
+        if (!msg) {
+          if (res.status === 401) {
+            msg = "Email/NIM/NIP atau password salah";
+          } else if (res.status === 403) {
+            msg =
+              scope === "admin"
+                ? "Akun ini bukan administrator"
+                : "Akses ditolak";
+          } else if (res.status === 400) {
+            msg = "Data login tidak lengkap";
+          } else if (res.status >= 500) {
+            msg = "Server sedang bermasalah, coba lagi sebentar lagi";
+          } else {
+            msg = "Gagal login";
+          }
+        }
+        setErr(msg);
         setLoading(false);
         return;
       }
+
       const next = params?.get("next");
       router.push(next && next.startsWith("/") ? next : "/dashboard");
       router.refresh();
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Gagal login";
+      // Network error / fetch gagal total.
+      const msg =
+        e instanceof Error && e.message
+          ? `Gagal terhubung ke server: ${e.message}`
+          : "Gagal terhubung ke server";
       setErr(msg);
       setLoading(false);
     }
