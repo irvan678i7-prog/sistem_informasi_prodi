@@ -7,8 +7,7 @@ import { formatDateTime } from "@/lib/utils";
 export default async function AuditPage() {
   const user = await getCurrentUser();
   if (!user) return null;
-  if (user.role !== "ADMIN_SISTEM" && user.role !== "ADMIN_PRODI")
-    redirect("/dashboard");
+  if (user.role !== "ADMIN") redirect("/dashboard");
 
   const items = await prisma.auditLog.findMany({
     include: { actor: true },

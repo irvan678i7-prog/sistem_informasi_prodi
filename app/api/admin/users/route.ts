@@ -7,15 +7,7 @@ const Body = z.object({
   name: z.string().min(2),
   email: z.string().email(),
   nimNip: z.string().min(2),
-  role: z.enum([
-    "ADMIN_SISTEM",
-    "ADMIN_PRODI",
-    "KAPRODI",
-    "WAKIL_DIREKTUR",
-    "DIREKTUR",
-    "DOSEN",
-    "MAHASISWA",
-  ]),
+  role: z.enum(["ADMIN", "KAPRODI", "DOSEN", "MAHASISWA"]),
   prodiId: z.string().nullable().optional(),
   password: z.string().min(6),
   phone: z.string().nullable().optional(),
@@ -27,7 +19,7 @@ const Body = z.object({
 export async function POST(req: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ message: "Belum login" }, { status: 401 });
-  if (session.role !== "ADMIN_SISTEM" && session.role !== "ADMIN_PRODI")
+  if (session.role !== "ADMIN")
     return NextResponse.json({ message: "Tidak diizinkan" }, { status: 403 });
 
   let parsed;
@@ -38,16 +30,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: msg }, { status: 400 });
   }
 
-  // Admin Prodi can't create ADMIN_SISTEM
-  if (session.role === "ADMIN_PRODI" && parsed.role === "ADMIN_SISTEM")
-    return NextResponse.json({ message: "Tidak diizinkan" }, { status: 403 });
-
-  // Admin Prodi: force prodiId = own prodi
-  let prodiId = parsed.prodiId || null;
-  if (session.role === "ADMIN_PRODI") {
-    const me = await prisma.user.findUnique({ where: { id: session.uid } });
-    prodiId = me?.prodiId ?? null;
-  }
+  const prodiId = parsed.prodiId || null;
 
   const existing = await prisma.user.findFirst({
     where: { OR: [{ email: parsed.email }, { nimNip: parsed.nimNip }] },
@@ -79,10 +62,7 @@ export async function POST(req: Request) {
             }
           : undefined,
       dosenProfile:
-        parsed.role === "DOSEN" ||
-        parsed.role === "KAPRODI" ||
-        parsed.role === "WAKIL_DIREKTUR" ||
-        parsed.role === "DIREKTUR"
+        parsed.role === "DOSEN" || parsed.role === "KAPRODI"
           ? {
               create: { nidn: parsed.nidn || null },
             }

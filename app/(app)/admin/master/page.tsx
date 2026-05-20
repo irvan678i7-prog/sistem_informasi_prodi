@@ -10,16 +10,15 @@ const KEYS = [
   "institusi.telp",
   "institusi.email",
   "institusi.website",
-  "ttd.direktur.name",
-  "ttd.direktur.nidn",
-  "ttd.wadir.name",
-  "ttd.wadir.nidn",
+  "ttd.kaprodi.name",
+  "ttd.kaprodi.nidn",
+  "ttd.kaprodi.image",
 ] as const;
 
 export default async function AdminMasterPage() {
   const user = await getCurrentUser();
   if (!user) return null;
-  if (user.role !== "ADMIN_SISTEM") redirect("/dashboard");
+  if (user.role !== "ADMIN") redirect("/dashboard");
 
   const rows = await prisma.appSetting.findMany({
     where: { key: { in: [...KEYS] } },

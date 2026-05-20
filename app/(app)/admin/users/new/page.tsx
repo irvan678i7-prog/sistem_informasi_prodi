@@ -8,8 +8,7 @@ import { UserForm } from "./UserForm";
 export default async function NewUserPage() {
   const user = await getCurrentUser();
   if (!user) return null;
-  if (user.role !== "ADMIN_SISTEM" && user.role !== "ADMIN_PRODI")
-    redirect("/dashboard");
+  if (user.role !== "ADMIN") redirect("/dashboard");
 
   const prodi = await prisma.prodi.findMany({ orderBy: { name: "asc" } });
 
@@ -28,9 +27,7 @@ export default async function NewUserPage() {
         <CardBody>
           <UserForm
             prodi={prodi.map((p) => ({ id: p.id, name: p.name }))}
-            adminProdiId={
-              user.role === "ADMIN_PRODI" ? user.prodiId : null
-            }
+            adminProdiId={null}
           />
         </CardBody>
       </Card>

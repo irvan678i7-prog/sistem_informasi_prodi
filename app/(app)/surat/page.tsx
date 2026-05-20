@@ -23,7 +23,7 @@ export default async function SuratIndexPage() {
 
   const where = isMhs
     ? { mahasiswaId: user.id }
-    : user.role === "ADMIN_PRODI" || user.role === "KAPRODI"
+    : user.role === "KAPRODI"
       ? user.prodiId
         ? { mahasiswa: { prodiId: user.prodiId } }
         : {}

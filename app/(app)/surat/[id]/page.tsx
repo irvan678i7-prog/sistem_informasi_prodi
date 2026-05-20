@@ -42,7 +42,7 @@ export default async function SuratDetailPage({
   const isOwner = letter.mahasiswaId === user.id;
   const canView =
     isOwner ||
-    user.role === "ADMIN_SISTEM" ||
+    user.role === "ADMIN" ||
     (canHandleLetter(user.role) &&
       (!user.prodiId || letter.mahasiswa.prodiId === user.prodiId));
   if (!canView) redirect("/surat");
@@ -54,6 +54,25 @@ export default async function SuratDetailPage({
     typeof letter.payload === "object" && letter.payload !== null
       ? (letter.payload as Record<string, unknown>)
       : {};
+
+  const settings = await prisma.appSetting.findMany({
+    where: {
+      key: {
+        in: [
+          "institusi.namaPascasarjana",
+          "institusi.alamat",
+          "institusi.telp",
+          "institusi.email",
+          "institusi.website",
+          "ttd.kaprodi.image",
+          "ttd.kaprodi.nidn",
+        ],
+      },
+    },
+  });
+  const settingsMap: Record<string, string> = Object.fromEntries(
+    settings.map((s) => [s.key, typeof s.value === "string" ? s.value : ""]),
+  );
 
   return (
     <div className="max-w-6xl mx-auto space-y-4">
@@ -105,10 +124,19 @@ export default async function SuratDetailPage({
                     ? {
                         name: letter.signedDoc.signerName,
                         role: letter.signedDoc.signerRole,
-                        nip: null,
+                        nip: settingsMap["ttd.kaprodi.nidn"] || null,
+                        signatureUrl:
+                          settingsMap["ttd.kaprodi.image"] || null,
                       }
                     : null
                 }
+                institution={{
+                  nama: settingsMap["institusi.namaPascasarjana"],
+                  alamat: settingsMap["institusi.alamat"],
+                  telp: settingsMap["institusi.telp"],
+                  email: settingsMap["institusi.email"],
+                  website: settingsMap["institusi.website"],
+                }}
                 qrUrl={letter.signedDoc?.qrUrl}
                 verifyUrl={
                   letter.signedDoc

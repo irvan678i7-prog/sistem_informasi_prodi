@@ -35,9 +35,9 @@ export async function POST(req: Request) {
   if (!ok) {
     return NextResponse.json({ message: "Password salah" }, { status: 401 });
   }
-  if (scope === "admin" && user.role !== "ADMIN_SISTEM") {
+  if (scope === "admin" && user.role !== "ADMIN") {
     return NextResponse.json(
-      { message: "Akun ini bukan admin sistem" },
+      { message: "Akun ini bukan administrator" },
       { status: 403 },
     );
   }

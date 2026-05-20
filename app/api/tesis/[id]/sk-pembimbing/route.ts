@@ -16,12 +16,7 @@ export async function POST(
 ) {
   const session = await getSession();
   if (!session) return NextResponse.json({ message: "Belum login" }, { status: 401 });
-  if (
-    session.role !== "KAPRODI" &&
-    session.role !== "WAKIL_DIREKTUR" &&
-    session.role !== "DIREKTUR" &&
-    session.role !== "ADMIN_SISTEM"
-  )
+  if (session.role !== "KAPRODI")
     return NextResponse.json({ message: "Tidak diizinkan" }, { status: 403 });
 
   const { id } = await ctx.params;

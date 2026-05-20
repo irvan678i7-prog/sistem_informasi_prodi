@@ -15,7 +15,7 @@ export async function PATCH(
   ctx: { params: Promise<{ id: string }> },
 ) {
   const session = await getSession();
-  if (!session || session.role !== "ADMIN_SISTEM")
+  if (!session || session.role !== "ADMIN")
     return NextResponse.json({ message: "Tidak diizinkan" }, { status: 403 });
   const { id } = await ctx.params;
   let parsed;
@@ -61,7 +61,7 @@ export async function DELETE(
   ctx: { params: Promise<{ id: string }> },
 ) {
   const session = await getSession();
-  if (!session || session.role !== "ADMIN_SISTEM")
+  if (!session || session.role !== "ADMIN")
     return NextResponse.json({ message: "Tidak diizinkan" }, { status: 403 });
   const { id } = await ctx.params;
   try {

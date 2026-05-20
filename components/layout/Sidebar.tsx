@@ -13,7 +13,6 @@ import {
   Bell,
   Cog,
   FileText,
-  School,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Role } from "@prisma/client";
@@ -31,19 +30,19 @@ const NAV: NavItem[] = [
     href: "/surat",
     label: "Persuratan",
     icon: Mail,
-    roles: ["MAHASISWA", "DOSEN", "KAPRODI", "WAKIL_DIREKTUR", "DIREKTUR"],
+    roles: ["MAHASISWA", "DOSEN", "KAPRODI"],
   },
   {
     href: "/tesis",
     label: "Tesis",
     icon: GraduationCap,
-    roles: ["MAHASISWA", "DOSEN", "KAPRODI", "WAKIL_DIREKTUR", "DIREKTUR"],
+    roles: ["MAHASISWA", "DOSEN", "KAPRODI"],
   },
   {
     href: "/bimbingan",
     label: "Bimbingan",
     icon: ClipboardList,
-    roles: ["DOSEN", "KAPRODI", "WAKIL_DIREKTUR", "DIREKTUR", "MAHASISWA"],
+    roles: ["DOSEN", "KAPRODI", "MAHASISWA"],
   },
   {
     href: "/notifikasi",
@@ -54,31 +53,31 @@ const NAV: NavItem[] = [
     href: "/tesis/sk-pembimbing",
     label: "SK Pembimbing",
     icon: FileText,
-    roles: ["KAPRODI", "WAKIL_DIREKTUR", "DIREKTUR"],
+    roles: ["KAPRODI"],
   },
   {
     href: "/admin/users",
     label: "Kelola User",
     icon: Users,
-    roles: ["ADMIN_SISTEM", "ADMIN_PRODI"],
+    roles: ["ADMIN"],
   },
   {
     href: "/admin/prodi",
     label: "Kelola Prodi",
     icon: Building2,
-    roles: ["ADMIN_SISTEM"],
+    roles: ["ADMIN"],
   },
   {
     href: "/admin/master",
     label: "Master Data",
     icon: Cog,
-    roles: ["ADMIN_SISTEM"],
+    roles: ["ADMIN"],
   },
   {
     href: "/admin/audit",
     label: "Audit Log",
     icon: ShieldCheck,
-    roles: ["ADMIN_SISTEM", "ADMIN_PRODI"],
+    roles: ["ADMIN"],
   },
 ];
 
@@ -95,8 +94,13 @@ export function Sidebar({
   return (
     <aside className="w-64 shrink-0 border-r border-slate-200 bg-white min-h-[calc(100vh-56px)] sticky top-14">
       <div className="px-4 py-4">
-        <div className="flex items-center gap-2 mb-4 px-2">
-          <School className="text-brand-700" />
+        <div className="flex items-center gap-2.5 mb-5 px-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo-um-metro.png"
+            alt="UM Metro"
+            className="w-9 h-9 object-contain"
+          />
           <div>
             <p className="font-semibold text-slate-900 text-sm leading-tight">
               SIPRO

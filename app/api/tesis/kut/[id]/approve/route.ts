@@ -31,11 +31,7 @@ export async function POST(
     if (kut.tesis.pembimbing2Id !== session.uid)
       return NextResponse.json({ message: "Bukan Pembimbing 2" }, { status: 403 });
   } else if (by === "KAPRODI") {
-    if (
-      session.role !== "KAPRODI" &&
-      session.role !== "WAKIL_DIREKTUR" &&
-      session.role !== "DIREKTUR"
-    )
+    if (session.role !== "KAPRODI")
       return NextResponse.json({ message: "Bukan Kaprodi" }, { status: 403 });
   }
 

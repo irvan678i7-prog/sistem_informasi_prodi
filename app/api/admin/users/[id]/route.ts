@@ -19,7 +19,7 @@ export async function PATCH(
 ) {
   const session = await getSession();
   if (!session) return NextResponse.json({ message: "Belum login" }, { status: 401 });
-  if (session.role !== "ADMIN_SISTEM" && session.role !== "ADMIN_PRODI")
+  if (session.role !== "ADMIN")
     return NextResponse.json({ message: "Tidak diizinkan" }, { status: 403 });
 
   const { id } = await ctx.params;
@@ -34,20 +34,6 @@ export async function PATCH(
   const target = await prisma.user.findUnique({ where: { id } });
   if (!target)
     return NextResponse.json({ message: "Tidak ditemukan" }, { status: 404 });
-
-  if (session.role === "ADMIN_PRODI") {
-    const me = await prisma.user.findUnique({ where: { id: session.uid } });
-    if (!me?.prodiId || me.prodiId !== target.prodiId)
-      return NextResponse.json(
-        { message: "Tidak diizinkan (beda prodi)" },
-        { status: 403 },
-      );
-    if (target.role === "ADMIN_SISTEM")
-      return NextResponse.json(
-        { message: "Tidak diizinkan" },
-        { status: 403 },
-      );
-  }
 
   const data: {
     isActive?: boolean;
@@ -86,7 +72,7 @@ export async function DELETE(
 ) {
   const session = await getSession();
   if (!session) return NextResponse.json({ message: "Belum login" }, { status: 401 });
-  if (session.role !== "ADMIN_SISTEM")
+  if (session.role !== "ADMIN")
     return NextResponse.json({ message: "Tidak diizinkan" }, { status: 403 });
 
   const { id } = await ctx.params;

@@ -6,6 +6,7 @@ interface SignerInfo {
   name: string;
   role: Role;
   nip?: string | null;
+  signatureUrl?: string | null;
 }
 
 interface MahasiswaInfo {
@@ -15,6 +16,14 @@ interface MahasiswaInfo {
   jenjang?: string | null;
   semester?: number | null;
   angkatan?: number | null;
+}
+
+interface InstitutionInfo {
+  nama?: string;
+  alamat?: string;
+  telp?: string;
+  email?: string;
+  website?: string;
 }
 
 interface LetterDocumentProps {
@@ -27,13 +36,13 @@ interface LetterDocumentProps {
   qrUrl?: string | null;
   verifyUrl?: string | null;
   isDraft?: boolean;
+  institution?: InstitutionInfo;
 }
 
 const ROLE_TITLE: Partial<Record<Role, string>> = {
   KAPRODI: "Ketua Program Studi",
-  WAKIL_DIREKTUR: "Wakil Direktur",
-  DIREKTUR: "Direktur",
-  ADMIN_PRODI: "Admin Program Studi",
+  ADMIN: "Administrator",
+  DOSEN: "Dosen",
 };
 
 function Field({ k, v }: { k: string; v: React.ReactNode }) {
@@ -47,27 +56,59 @@ function Field({ k, v }: { k: string; v: React.ReactNode }) {
 }
 
 export function LetterDocument(props: LetterDocumentProps) {
-  const { type, nomor, payload, mahasiswa, signer, qrUrl, verifyUrl, isDraft } =
-    props;
+  const {
+    type,
+    nomor,
+    payload,
+    mahasiswa,
+    signer,
+    qrUrl,
+    verifyUrl,
+    isDraft,
+    institution,
+  } = props;
   const date = props.date ? new Date(props.date) : new Date();
   const title = LETTER_LABEL[type];
 
   return (
     <div className="print-page shadow-sm border border-slate-200">
       {/* KOP SURAT */}
-      <header className="text-center border-b-4 border-double border-slate-800 pb-3 mb-4">
-        <p className="text-xs">PEMERINTAH</p>
-        <h2 className="text-lg font-bold uppercase">
-          Universitas Muhammadiyah Metro
-        </h2>
-        <h3 className="text-base font-bold uppercase">Program Pascasarjana</h3>
-        <p className="text-[11px] text-slate-700">
-          Jl. Ki Hajar Dewantara No. 116, Iringmulyo, Kota Metro, Lampung 34111
-          · Telp. (0725) 42445
-        </p>
-        <p className="text-[11px] text-slate-700">
-          Website: pps.ummetro.ac.id · E-mail: pps@ummetro.ac.id
-        </p>
+      <header className="border-b-4 border-double border-slate-800 pb-3 mb-4">
+        <div className="flex items-center gap-3">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo-um-metro.png"
+            alt="Logo UM Metro"
+            className="w-20 h-20 object-contain shrink-0"
+          />
+          <div className="text-center flex-1">
+            <p className="text-[11px] uppercase tracking-wide">
+              Majelis Pendidikan Tinggi Penelitian Dan Pengembangan
+            </p>
+            <p className="text-[11px] uppercase tracking-wide">
+              Pimpinan Pusat Muhammadiyah
+            </p>
+            <h2 className="text-lg font-bold uppercase">
+              Universitas Muhammadiyah Metro
+            </h2>
+            <h3 className="text-base font-bold uppercase">
+              {institution?.nama || "Program Pascasarjana"}
+            </h3>
+            <p className="text-[11px] text-slate-700">
+              {institution?.alamat ||
+                "Jl. Ki Hajar Dewantara No. 116, Iringmulyo, Kota Metro, Lampung 34111"}
+              {institution?.telp ? ` · Telp. ${institution.telp}` : ""}
+            </p>
+            <p className="text-[11px] text-slate-700">
+              {institution?.website
+                ? `Website: ${institution.website}`
+                : "Website: pps.ummetro.ac.id"}
+              {institution?.email
+                ? ` · E-mail: ${institution.email}`
+                : " · E-mail: pps@ummetro.ac.id"}
+            </p>
+          </div>
+        </div>
       </header>
 
       {/* NOMOR */}
@@ -91,9 +132,10 @@ export function LetterDocument(props: LetterDocumentProps) {
       </p>
 
       <p className="text-sm mt-2">
-        Yang bertanda tangan di bawah ini, {ROLE_TITLE[signer?.role || "KAPRODI"] || "Pejabat Berwenang"}{" "}
-        Program Pascasarjana Universitas Muhammadiyah Metro, dengan ini
-        menerangkan bahwa:
+        Yang bertanda tangan di bawah ini,{" "}
+        {ROLE_TITLE[signer?.role || "KAPRODI"] || "Pejabat Berwenang"} Program
+        Pascasarjana Universitas Muhammadiyah Metro, dengan ini menerangkan
+        bahwa:
       </p>
 
       <div className="my-3 ml-6 text-sm">
@@ -128,7 +170,19 @@ export function LetterDocument(props: LetterDocumentProps) {
             <br />
             {ROLE_TITLE[signer?.role || "KAPRODI"] || "Pejabat Berwenang"},
           </p>
-          <div className="my-2 h-16 flex items-end">
+          <div className="my-2 flex items-end gap-3">
+            {/* TTD image (if signer uploaded) */}
+            <div className="h-20 w-24 flex items-end">
+              {signer?.signatureUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={signer.signatureUrl}
+                  alt="TTD"
+                  className="h-20 w-auto object-contain"
+                />
+              ) : null}
+            </div>
+            {/* QR verifikasi */}
             {qrUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={qrUrl} alt="QR Verifikasi" className="w-20 h-20" />

@@ -69,7 +69,7 @@ export async function POST(req: Request) {
   });
   if (me?.prodiId) {
     const handlers = await prisma.user.findMany({
-      where: { prodiId: me.prodiId, role: { in: ["ADMIN_PRODI", "KAPRODI"] } },
+      where: { prodiId: me.prodiId, role: "KAPRODI" },
       select: { id: true },
     });
     if (handlers.length) {

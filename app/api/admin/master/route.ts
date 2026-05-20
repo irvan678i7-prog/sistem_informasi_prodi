@@ -4,7 +4,7 @@ import { getSession } from "@/lib/auth";
 
 export async function POST(req: Request) {
   const session = await getSession();
-  if (!session || session.role !== "ADMIN_SISTEM")
+  if (!session || session.role !== "ADMIN")
     return NextResponse.json({ message: "Tidak diizinkan" }, { status: 403 });
   let body: Record<string, unknown>;
   try {

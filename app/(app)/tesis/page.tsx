@@ -180,7 +180,7 @@ export default async function TesisIndexPage() {
 
   // Non-mahasiswa: list tesis dalam prodi
   const where =
-    user.role === "ADMIN_SISTEM"
+    user.role === "ADMIN"
       ? {}
       : user.prodiId
         ? { mahasiswa: { prodiId: user.prodiId } }

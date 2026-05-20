@@ -20,8 +20,7 @@ export default async function AdminUsersPage({
 }) {
   const user = await getCurrentUser();
   if (!user) return null;
-  if (user.role !== "ADMIN_SISTEM" && user.role !== "ADMIN_PRODI")
-    redirect("/dashboard");
+  if (user.role !== "ADMIN") redirect("/dashboard");
 
   const sp = await searchParams;
   const q = sp.q?.trim() ?? "";
@@ -29,7 +28,7 @@ export default async function AdminUsersPage({
 
   const where: {
     OR?: Array<{ name?: { contains: string; mode: "insensitive" }; email?: { contains: string; mode: "insensitive" }; nimNip?: { contains: string; mode: "insensitive" } }>;
-    role?: "ADMIN_SISTEM" | "ADMIN_PRODI" | "KAPRODI" | "WAKIL_DIREKTUR" | "DIREKTUR" | "DOSEN" | "MAHASISWA";
+    role?: "ADMIN" | "KAPRODI" | "DOSEN" | "MAHASISWA";
     prodiId?: string;
   } = {};
   if (q) {
@@ -39,20 +38,9 @@ export default async function AdminUsersPage({
       { nimNip: { contains: q, mode: "insensitive" } },
     ];
   }
-  const ROLE_OPTIONS = [
-    "ADMIN_SISTEM",
-    "ADMIN_PRODI",
-    "KAPRODI",
-    "WAKIL_DIREKTUR",
-    "DIREKTUR",
-    "DOSEN",
-    "MAHASISWA",
-  ] as const;
+  const ROLE_OPTIONS = ["ADMIN", "KAPRODI", "DOSEN", "MAHASISWA"] as const;
   if (roleFilter && (ROLE_OPTIONS as readonly string[]).includes(roleFilter)) {
     where.role = roleFilter as (typeof ROLE_OPTIONS)[number];
-  }
-  if (user.role === "ADMIN_PRODI" && user.prodiId) {
-    where.prodiId = user.prodiId;
   }
 
   const users = await prisma.user.findMany({

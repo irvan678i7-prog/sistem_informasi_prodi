@@ -8,7 +8,7 @@ import { ProdiActions } from "./ProdiActions";
 export default async function AdminProdiPage() {
   const user = await getCurrentUser();
   if (!user) return null;
-  if (user.role !== "ADMIN_SISTEM") redirect("/dashboard");
+  if (user.role !== "ADMIN") redirect("/dashboard");
 
   const prodi = await prisma.prodi.findMany({
     include: { kaprodi: true, _count: { select: { users: true } } },
