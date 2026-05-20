@@ -5,16 +5,25 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * Endpoint diagnostik: cek koneksi DB & ketersediaan tabel inti.
- * Aman diekspos publik karena tidak mengembalikan secret/connection string,
- * hanya status & nama error class.
+ * Endpoint diagnostik: cek koneksi DB & ketersediaan tabel + enum.
+ * Aman diekspos publik karena tidak mengembalikan secret/connection string.
+ *
+ * Memakai raw SQL biar tidak ikut gagal kalau enum di DB belum match
+ * dengan enum di Prisma client.
  */
 export async function GET() {
+  type RoleEnumRow = { value: string };
+  type CountRow = { count: bigint | number };
+  type RoleAggRow = { role: string; count: bigint | number };
+
   const result: {
     ok: boolean;
     env: { DATABASE_URL: boolean; DIRECT_URL: boolean; JWT_SECRET: boolean };
     canConnect: boolean;
     userTableExists: boolean;
+    roleEnumValues: string[] | null;
+    userCountTotal: number | null;
+    userCountByRole: Array<{ role: string; count: number }> | null;
     adminCount: number | null;
     error: string | null;
     errorCode: string | null;
@@ -28,6 +37,9 @@ export async function GET() {
     },
     canConnect: false,
     userTableExists: false,
+    roleEnumValues: null,
+    userCountTotal: null,
+    userCountByRole: null,
     adminCount: null,
     error: null,
     errorCode: null,
@@ -41,7 +53,7 @@ export async function GET() {
     return NextResponse.json(result, { status: 500 });
   }
 
-  // 1. Coba koneksi sederhana.
+  // 1. Tes koneksi.
   try {
     await prisma.$queryRaw`SELECT 1`;
     result.canConnect = true;
@@ -58,26 +70,56 @@ export async function GET() {
     } else if (/password authentication/i.test(err.message || "")) {
       result.hint =
         "Password DB salah. Update DATABASE_URL & DIRECT_URL dengan password yang benar (URL-encode jika ada karakter spesial).";
-    } else if (/prepared statement/i.test(err.message || "")) {
-      result.hint =
-        "DATABASE_URL belum pakai pooler. Tambahkan ?pgbouncer=true&connection_limit=1 di akhir URL dan pakai port 6543 (host pooler.supabase.com).";
     }
     return NextResponse.json(result, { status: 500 });
   }
 
-  // 2. Cek tabel User & jumlah admin.
+  // 2. Ambil daftar nilai enum Role yang aktual ada di DB.
   try {
-    const adminCount = await prisma.user.count({ where: { role: "ADMIN" } });
-    result.userTableExists = true;
-    result.adminCount = adminCount;
-    if (adminCount === 0) {
+    const rows = await prisma.$queryRawUnsafe<RoleEnumRow[]>(
+      `SELECT e.enumlabel AS value
+         FROM pg_type t
+         JOIN pg_enum e ON e.enumtypid = t.oid
+        WHERE t.typname = 'Role'
+        ORDER BY e.enumsortorder`,
+    );
+    result.roleEnumValues = rows.map((r) => r.value);
+  } catch (e: unknown) {
+    // Tipe enum belum ada -> berarti schema belum di-push sama sekali.
+    result.roleEnumValues = [];
+    const err = e as { message?: string };
+    if (
+      /does not exist/i.test(err.message || "") ||
+      /could not find/i.test(err.message || "")
+    ) {
       result.hint =
-        "Tabel User ada tapi belum ada admin. Jalankan seed: `npm run db:seed` (lokal, dengan .env mengarah ke DB production).";
-      result.ok = false;
-      return NextResponse.json(result, { status: 200 });
+        "Tipe enum 'Role' belum ada. Jalankan `npx prisma db push` (lokal, dengan .env mengarah ke DB production) untuk bikin schemanya.";
+      result.error = err.message || String(e);
+      return NextResponse.json(result, { status: 500 });
     }
-    result.ok = true;
-    return NextResponse.json(result, { status: 200 });
+  }
+
+  // 3. Cek tabel User pakai raw SQL (biar tidak gagal di enum mismatch).
+  try {
+    const totalRows = await prisma.$queryRawUnsafe<CountRow[]>(
+      `SELECT COUNT(*)::int AS count FROM "User"`,
+    );
+    result.userTableExists = true;
+    result.userCountTotal = Number(totalRows[0]?.count ?? 0);
+
+    const byRole = await prisma.$queryRawUnsafe<RoleAggRow[]>(
+      `SELECT role::text AS role, COUNT(*)::int AS count
+         FROM "User"
+        GROUP BY role::text
+        ORDER BY role::text`,
+    );
+    result.userCountByRole = byRole.map((r) => ({
+      role: r.role,
+      count: Number(r.count),
+    }));
+
+    const adminAgg = byRole.find((r) => r.role === "ADMIN");
+    result.adminCount = adminAgg ? Number(adminAgg.count) : 0;
   } catch (e: unknown) {
     const err = e as { code?: string; message?: string };
     result.error = err.message || String(e);
@@ -87,14 +129,25 @@ export async function GET() {
       /relation .* does not exist/i.test(err.message || "")
     ) {
       result.hint =
-        "Tabel belum dibuat di DB production. Jalankan dari lokal (dengan .env mengarah ke DB production): `npm run db:push` lalu `npm run db:seed`.";
-    } else if (
-      /invalid input value for enum/i.test(err.message || "") ||
-      /22P02/.test(err.message || "")
-    ) {
-      result.hint =
-        "Enum di DB tidak match dengan schema (mis. nilai ADMIN belum ada di enum Role). Buka /admin/setup, masukkan ADMIN_PASSWORD, lalu klik 'Jalankan Setup' untuk memperbaikinya otomatis.";
+        "Tabel 'User' belum dibuat di DB. Jalankan dari lokal (dengan .env mengarah ke DB production): `npm run db:push` lalu `npm run db:seed`.";
     }
     return NextResponse.json(result, { status: 500 });
   }
+
+  // 4. Beri hint berdasarkan kondisi.
+  const enumHasAdmin = (result.roleEnumValues || []).includes("ADMIN");
+  if (!enumHasAdmin) {
+    result.hint =
+      "Enum 'Role' di DB tidak punya nilai 'ADMIN'. Buka /admin/setup, masukkan ADMIN_PASSWORD, klik 'Jalankan Setup'. Enum value ada saat ini: " +
+      JSON.stringify(result.roleEnumValues);
+    return NextResponse.json(result, { status: 200 });
+  }
+  if (!result.adminCount || result.adminCount === 0) {
+    result.hint =
+      "Enum sudah benar tapi belum ada user dengan role ADMIN. Buka /admin/setup, klik Jalankan Setup untuk membuat admin dari ADMIN_EMAIL/ADMIN_PASSWORD.";
+    return NextResponse.json(result, { status: 200 });
+  }
+
+  result.ok = true;
+  return NextResponse.json(result, { status: 200 });
 }
