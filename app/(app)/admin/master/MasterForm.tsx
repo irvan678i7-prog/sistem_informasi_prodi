@@ -12,9 +12,11 @@ export function MasterForm({ initial }: { initial: Record<string, string> }) {
   const [v, setV] = useState<Record<string, string>>(initial);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [ok, setOk] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
+  const logoRef = useRef<HTMLInputElement | null>(null);
 
   async function save() {
     setErr(null);
@@ -71,7 +73,40 @@ export function MasterForm({ initial }: { initial: Record<string, string> }) {
     set("ttd.kaprodi.image", "");
   }
 
+  async function onUploadLogo(file: File) {
+    setErr(null);
+    setOk(false);
+    setUploadingLogo(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("key", "institusi.logo");
+      const res = await fetch("/api/admin/ttd", {
+        method: "POST",
+        body: fd,
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setErr(data.message || "Gagal unggah logo");
+        return;
+      }
+      set("institusi.logo", data.url);
+      setOk(true);
+      router.refresh();
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "Gagal unggah logo");
+    } finally {
+      setUploadingLogo(false);
+      if (logoRef.current) logoRef.current.value = "";
+    }
+  }
+
+  function clearLogo() {
+    set("institusi.logo", "");
+  }
+
   const ttdUrl = v["ttd.kaprodi.image"] || "";
+  const logoUrl = v["institusi.logo"] || "";
 
   return (
     <div className="space-y-4">
@@ -121,6 +156,61 @@ export function MasterForm({ initial }: { initial: Record<string, string> }) {
             />
           </FormRow>
         </div>
+
+        <FormRow
+          label="Logo Kop Surat"
+          htmlFor="logo"
+          hint="PNG/JPG/WEBP/SVG transparan, maks 2 MB. Tampil di kop semua surat resmi."
+        >
+          <div className="flex items-start gap-4">
+            <div className="w-32 h-24 rounded-md border border-dashed border-slate-300 bg-slate-50 grid place-items-center overflow-hidden">
+              {logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={logoUrl}
+                  alt="Pratinjau logo"
+                  className="max-h-full max-w-full object-contain"
+                />
+              ) : (
+                <span className="text-xs text-slate-400">
+                  Pakai logo bawaan
+                </span>
+              )}
+            </div>
+            <div className="space-y-2">
+              <input
+                ref={logoRef}
+                id="logo"
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) onUploadLogo(f);
+                }}
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={uploadingLogo}
+                onClick={() => logoRef.current?.click()}
+              >
+                <UploadCloud className="w-4 h-4 mr-1.5" />
+                {uploadingLogo ? "Mengunggah..." : "Unggah Logo"}
+              </Button>
+              {logoUrl && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={clearLogo}
+                  className="text-red-600"
+                >
+                  <Trash2 className="w-4 h-4 mr-1.5" /> Hapus
+                </Button>
+              )}
+            </div>
+          </div>
+        </FormRow>
       </section>
 
       <hr />

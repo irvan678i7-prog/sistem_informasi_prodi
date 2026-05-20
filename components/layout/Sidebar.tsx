@@ -50,6 +50,12 @@ const NAV: NavItem[] = [
     icon: Bell,
   },
   {
+    href: "/tesis/pembimbing",
+    label: "Atur Pembimbing",
+    icon: Users,
+    roles: ["KAPRODI"],
+  },
+  {
     href: "/tesis/sk-pembimbing",
     label: "SK Pembimbing",
     icon: FileText,

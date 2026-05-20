@@ -24,6 +24,7 @@ interface InstitutionInfo {
   telp?: string;
   email?: string;
   website?: string;
+  logo?: string;
 }
 
 interface LetterDocumentProps {
@@ -77,7 +78,7 @@ export function LetterDocument(props: LetterDocumentProps) {
         <div className="flex items-center gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/logo-um-metro.png"
+            src={institution?.logo || "/logo-um-metro.png"}
             alt="Logo UM Metro"
             className="w-20 h-20 object-contain shrink-0"
           />

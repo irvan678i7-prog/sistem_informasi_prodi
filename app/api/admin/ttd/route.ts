@@ -37,14 +37,15 @@ export async function POST(req: Request) {
       { message: "Ukuran maks 2 MB" },
       { status: 400 },
     );
-  if (!key.startsWith("ttd."))
+  if (!key.startsWith("ttd.") && key !== "institusi.logo")
     return NextResponse.json(
       { message: "Key tidak diizinkan" },
       { status: 400 },
     );
 
   const ext = (file.name.split(".").pop() || "png").toLowerCase();
-  const path = `ttd/${key.replace(/\./g, "_")}-${Date.now()}.${ext}`;
+  const folder = key === "institusi.logo" ? "branding" : "ttd";
+  const path = `${folder}/${key.replace(/\./g, "_")}-${Date.now()}.${ext}`;
 
   const uploaded = await uploadFileToSupabase(path, file);
 
@@ -57,7 +58,7 @@ export async function POST(req: Request) {
   await prisma.auditLog.create({
     data: {
       actorId: session.uid,
-      action: "TTD_UPLOAD",
+      action: key === "institusi.logo" ? "LOGO_UPLOAD" : "TTD_UPLOAD",
       entity: "AppSetting",
       entityId: key,
       metadata: { url: uploaded.url, size: uploaded.size },
