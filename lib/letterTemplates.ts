@@ -18,7 +18,7 @@ export const LETTER_DESC: Record<LetterType, string> = {
   PENGANTAR_SKPI:
     "Surat pengantar penerbitan Surat Keterangan Pendamping Ijazah.",
   BEBAS_PLAGIASI:
-    "Surat keterangan bahwa naskah tesis telah lolos uji plagiasi.",
+    "Surat keterangan bahwa naskah tesis telah lolos uji plagiasi (UPI UM Metro).",
 };
 
 export interface LetterField {
@@ -72,9 +72,13 @@ export const LETTER_FIELDS: Record<LetterType, LetterField[]> = {
   ],
   BEBAS_PLAGIASI: [
     { name: "judulTesis", label: "Judul Tesis", type: "textarea", required: true },
-    { name: "persenSimilarity", label: "Persentase Similarity (%)", type: "number", required: true },
-    { name: "alatUji", label: "Alat Uji Plagiasi", type: "text", required: true,
-      placeholder: "Mis. Turnitin / UPI UM Metro" },
-    { name: "tanggalUji", label: "Tanggal Uji", type: "date", required: true },
+    {
+      name: "linkBukti",
+      label: "Link Bukti Surat dari UPI UM Metro",
+      type: "text",
+      required: true,
+      placeholder: "https://drive.google.com/...",
+      hint: "Upload surat bukti bebas plagiasi yang diterbitkan UPI UM Metro ke Google Drive, lalu salin tautan bagikan-nya di sini. Pastikan akses dapat dilihat oleh siapa saja yang memiliki tautan.",
+    },
   ],
 };

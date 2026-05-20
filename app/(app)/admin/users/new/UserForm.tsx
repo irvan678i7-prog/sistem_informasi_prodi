@@ -43,7 +43,7 @@ export function UserForm({
     e.preventDefault();
     setErr(null);
     if (!name || !email || !nimNip || !password) {
-      setErr("Nama, Email, NIM/NIP, dan Password wajib diisi.");
+      setErr("Nama, Email, NIM/NIDN, dan Password wajib diisi.");
       return;
     }
     if (password.length < 6) {
@@ -104,7 +104,7 @@ export function UserForm({
             required
           />
         </FormRow>
-        <FormRow label="NIM / NIP" htmlFor="nim" required>
+        <FormRow label="NIM / NIDN" htmlFor="nim" required>
           <Input
             id="nim"
             value={nimNip}

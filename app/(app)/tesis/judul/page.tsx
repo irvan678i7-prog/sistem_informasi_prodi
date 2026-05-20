@@ -81,6 +81,13 @@ export default async function PengajuanJudulPage() {
                   </span>
                 </Alert>
               )}
+              {tesis?.judulStatus === "VERIFIED" && (
+                <Alert variant="info" title="Menunggu Finalisasi Kaprodi">
+                  PA telah merekomendasikan judul:{" "}
+                  <strong>{tesis.judulFinal}</strong>. Sedang menunggu
+                  finalisasi oleh Kaprodi.
+                </Alert>
+              )}
               {tesis?.judulStatus === "REJECTED" && (
                 <Alert variant="error" title="Ditolak">
                   Pengajuan Anda ditolak. Silakan ajukan ulang.
@@ -110,13 +117,14 @@ export default async function PengajuanJudulPage() {
     );
   }
 
-  // PA / Dosen view: list of pending pengajuan judul to me
+  // PA / Dosen / Kaprodi view: queue dipisah berdasarkan role.
   if (
     user.role === "DOSEN" ||
     user.role === "KAPRODI" ||
     user.role === "ADMIN"
   ) {
-    const items = await prisma.tesis.findMany({
+    // PA queue: tesis yang paId-nya = user (atau semua kalau ADMIN), status SUBMITTED
+    const paItems = await prisma.tesis.findMany({
       where: {
         ...(user.role === "ADMIN" ? {} : { paId: user.id }),
         judulStatus: "SUBMITTED",
@@ -125,45 +133,121 @@ export default async function PengajuanJudulPage() {
       orderBy: { updatedAt: "desc" },
     });
 
+    // Kaprodi queue: tesis di prodi user, status VERIFIED (sudah disetujui PA, menunggu finalisasi).
+    const kaprodiItems =
+      user.role === "KAPRODI" || user.role === "ADMIN"
+        ? await prisma.tesis.findMany({
+            where: {
+              judulStatus: "VERIFIED",
+              ...(user.role === "KAPRODI" && user.prodiId
+                ? { mahasiswa: { prodiId: user.prodiId } }
+                : {}),
+            },
+            include: {
+              mahasiswa: { include: { prodi: true } },
+              pa: { select: { name: true } },
+            },
+            orderBy: { updatedAt: "desc" },
+          })
+        : [];
+
     return (
-      <div className="max-w-4xl mx-auto space-y-4">
+      <div className="max-w-4xl mx-auto space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">
-            Pengajuan Judul (Antrian PA)
+            Pengajuan Judul Tesis
           </h1>
           <p className="text-sm text-slate-500">
-            Daftar pengajuan judul yang menunggu persetujuan Anda.
+            Alur: Mahasiswa → PA (rekomendasi) → Kaprodi (finalisasi).
           </p>
         </div>
-        {items.length === 0 ? (
-          <Card>
-            <CardBody className="text-center py-10 text-sm text-slate-500">
-              Tidak ada antrian.
-            </CardBody>
-          </Card>
-        ) : (
-          items.map((t) => (
-            <Card key={t.id}>
-              <CardHeader>
-                <CardTitle>{t.mahasiswa.name}</CardTitle>
-                <CardDescription>
-                  {t.mahasiswa.nimNip}
-                  {t.mahasiswa.prodi ? ` · ${t.mahasiswa.prodi.name}` : ""}
-                </CardDescription>
-              </CardHeader>
-              <CardBody className="space-y-3">
-                <div>
-                  <p className="text-xs text-slate-500">Judul 1</p>
-                  <p className="text-slate-900">{t.judul1 || "-"}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-slate-500">Judul 2</p>
-                  <p className="text-slate-900">{t.judul2 || "-"}</p>
-                </div>
-                <JudulAction tesisId={t.id} />
+
+        {/* PA queue */}
+        <section className="space-y-3">
+          <h2 className="text-base font-semibold text-slate-800">
+            Antrian PA
+          </h2>
+          <p className="text-xs text-slate-500">
+            Pengajuan yang menunggu rekomendasi Anda sebagai PA.
+          </p>
+          {paItems.length === 0 ? (
+            <Card>
+              <CardBody className="text-center py-8 text-sm text-slate-500">
+                Tidak ada antrian PA.
               </CardBody>
             </Card>
-          ))
+          ) : (
+            paItems.map((t) => (
+              <Card key={t.id}>
+                <CardHeader>
+                  <CardTitle>{t.mahasiswa.name}</CardTitle>
+                  <CardDescription>
+                    {t.mahasiswa.nimNip}
+                    {t.mahasiswa.prodi
+                      ? ` · ${t.mahasiswa.prodi.name}`
+                      : ""}
+                  </CardDescription>
+                </CardHeader>
+                <CardBody className="space-y-3">
+                  <div>
+                    <p className="text-xs text-slate-500">Judul 1</p>
+                    <p className="text-slate-900">{t.judul1 || "-"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500">Judul 2</p>
+                    <p className="text-slate-900">{t.judul2 || "-"}</p>
+                  </div>
+                  <JudulAction tesisId={t.id} mode="pa" />
+                </CardBody>
+              </Card>
+            ))
+          )}
+        </section>
+
+        {/* Kaprodi queue */}
+        {(user.role === "KAPRODI" || user.role === "ADMIN") && (
+          <section className="space-y-3">
+            <h2 className="text-base font-semibold text-slate-800">
+              Antrian Finalisasi Kaprodi
+            </h2>
+            <p className="text-xs text-slate-500">
+              Judul yang sudah direkomendasikan PA, menunggu finalisasi
+              Kaprodi.
+            </p>
+            {kaprodiItems.length === 0 ? (
+              <Card>
+                <CardBody className="text-center py-8 text-sm text-slate-500">
+                  Tidak ada antrian finalisasi.
+                </CardBody>
+              </Card>
+            ) : (
+              kaprodiItems.map((t) => (
+                <Card key={t.id}>
+                  <CardHeader>
+                    <CardTitle>{t.mahasiswa.name}</CardTitle>
+                    <CardDescription>
+                      {t.mahasiswa.nimNip}
+                      {t.mahasiswa.prodi
+                        ? ` · ${t.mahasiswa.prodi.name}`
+                        : ""}
+                      {t.pa?.name ? ` · PA: ${t.pa.name}` : ""}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardBody className="space-y-3">
+                    <div>
+                      <p className="text-xs text-slate-500">
+                        Judul Final (rekomendasi PA)
+                      </p>
+                      <p className="text-slate-900 font-medium">
+                        {t.judulFinal || "-"}
+                      </p>
+                    </div>
+                    <JudulAction tesisId={t.id} mode="kaprodi" />
+                  </CardBody>
+                </Card>
+              ))
+            )}
+          </section>
         )}
       </div>
     );

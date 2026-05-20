@@ -23,7 +23,7 @@ export default async function AppLayout({
         unreadCount={unread}
       />
       <div className="flex">
-        <Sidebar role={user.role} unreadCount={unread} />
+        <Sidebar role={user.role} />
         <main className="flex-1 px-4 lg:px-6 py-6 max-w-screen-2xl mx-auto w-full">
           {children}
         </main>

@@ -60,7 +60,7 @@ export default async function DashboardPage() {
             </h1>
             <p className="text-sm text-white/85">
               {ROLE_LABEL[user.role]}
-              {user.prodi ? ` · ${user.prodi.name}` : ""} · NIM/NIP {user.nimNip}
+              {user.prodi ? ` · ${user.prodi.name}` : ""} · NIM/NIDN {user.nimNip}
             </p>
           </div>
         </div>
