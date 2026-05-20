@@ -10,6 +10,7 @@ const KEYS = [
   "institusi.telp",
   "institusi.email",
   "institusi.website",
+  "institusi.logo",
   "ttd.kaprodi.name",
   "ttd.kaprodi.nidn",
   "ttd.kaprodi.image",

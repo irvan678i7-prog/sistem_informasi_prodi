@@ -64,6 +64,7 @@ export default async function SuratDetailPage({
           "institusi.telp",
           "institusi.email",
           "institusi.website",
+          "institusi.logo",
           "ttd.kaprodi.image",
           "ttd.kaprodi.nidn",
         ],
@@ -136,6 +137,7 @@ export default async function SuratDetailPage({
                   telp: settingsMap["institusi.telp"],
                   email: settingsMap["institusi.email"],
                   website: settingsMap["institusi.website"],
+                  logo: settingsMap["institusi.logo"] || undefined,
                 }}
                 qrUrl={letter.signedDoc?.qrUrl}
                 verifyUrl={
