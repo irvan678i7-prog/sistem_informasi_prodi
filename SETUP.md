@@ -1,14 +1,14 @@
 # Panduan Setup — Sistem Informasi Prodi (PPs UM Metro)
 
-Project ini sekarang memakai arsitektur:
+Project ini memakai **satu project Supabase** untuk dua kebutuhan:
 
 | Komponen     | Layanan                          | Catatan                              |
 | ------------ | -------------------------------- | ------------------------------------ |
-| **Database** | **Neon** (PostgreSQL serverless) | Gratis, isolasi per-project          |
-| **Storage**  | **Supabase Storage**             | Project Supabase BARU, terpisah      |
+| **Database** | **Supabase Postgres**            | Pooled connection (Transaction mode) |
+| **Storage**  | **Supabase Storage**             | Bucket `documents` (auto-create)     |
 | **Auth**     | Custom JWT + bcrypt              | Sudah built-in, tidak perlu setup    |
 
-> Database dan storage **dipisah** agar tidak tabrakan dengan aplikasi lain.
+> Database dan storage cukup memakai **satu project Supabase** yang sama.
 
 ---
 
@@ -25,51 +25,53 @@ Edit `.env` mengikuti langkah-langkah di bawah.
 
 ---
 
-## 2. Setup Database — Neon
+## 2. Buat Project Supabase
 
-### 2.1 Daftar & Buat Project
+1. Buka **https://supabase.com/dashboard** → klik **New project**.
+2. Isi form:
+   - **Name**: `sipro-pps-ummetro`
+   - **Database password**: simpan baik-baik, akan dipakai untuk connection string
+   - **Region**: pilih yang terdekat (mis. `Southeast Asia (Singapore)`)
+   - **Pricing plan**: Free
+3. Klik **Create new project** → tunggu ~1 menit hingga project siap.
 
-1. Buka **https://neon.tech** → klik **Sign up** (bisa pakai GitHub/Google).
-2. Setelah login, klik **Create a project**.
-3. Isi form:
-   - **Project name**: `sipro-pps-ummetro`
-   - **Postgres version**: 16 (default)
-   - **Region**: pilih yang terdekat (mis. `Singapore` / `AWS ap-southeast-1`)
-   - **Database name**: `neondb` (default oke)
-4. Klik **Create project**.
+---
 
-### 2.2 Ambil Connection String
+## 3. Setup Database
 
-Setelah project dibuat, Neon menampilkan halaman **Connection Details**:
+### 3.1 Ambil Connection String
 
-1. Pilih dropdown **Connection string** → **Pooled connection**.
-   Connection string ini akan jadi `DATABASE_URL`.
-   Formatnya seperti:
+Pada project Supabase yang baru dibuat → menu **Project Settings** (ikon gerigi) → **Database** → bagian **Connection string**:
+
+1. Pilih tab **URI** dan mode **Transaction** (port `6543`).
+   String ini menjadi **`DATABASE_URL`** (dipakai runtime). Formatnya:
    ```
-   postgresql://USER:PASSWORD@ep-xxxx-pooler.REGION.aws.neon.tech/neondb?sslmode=require
+   postgresql://postgres.PROJECT_REF:PASSWORD@aws-0-REGION.pooler.supabase.com:6543/postgres
    ```
-2. Pilih dropdown **Connection string** → **Direct connection** (matikan toggle "Pooled connection").
-   Connection string ini akan jadi `DIRECT_URL`. Formatnya:
+2. Pilih mode **Session** atau scroll ke **Direct connection** (port `5432`, host `db.<ref>.supabase.co`).
+   String ini menjadi **`DIRECT_URL`** (dipakai `prisma migrate` / `db push`). Formatnya:
    ```
-   postgresql://USER:PASSWORD@ep-xxxx.REGION.aws.neon.tech/neondb?sslmode=require
+   postgresql://postgres:PASSWORD@db.PROJECT_REF.supabase.co:5432/postgres
    ```
 
-> Cara mudah membedakan: hostname **DATABASE_URL** mengandung `-pooler`,
-> sedangkan **DIRECT_URL** TIDAK mengandung `-pooler`.
+> Cara mudah membedakan: **DATABASE_URL** memakai host `pooler.supabase.com:6543`,
+> **DIRECT_URL** memakai host `db.<ref>.supabase.co:5432`.
 
-### 2.3 Tambahkan ke `.env`
+### 3.2 Tambahkan ke `.env`
 
-Tambahkan parameter `&pgbouncer=true&connect_timeout=15` di akhir `DATABASE_URL`:
+Tambahkan parameter `?pgbouncer=true&connection_limit=1` di akhir `DATABASE_URL`:
 
 ```env
-DATABASE_URL="postgresql://USER:PASSWORD@ep-xxxx-pooler.REGION.aws.neon.tech/neondb?sslmode=require&pgbouncer=true&connect_timeout=15"
-DIRECT_URL="postgresql://USER:PASSWORD@ep-xxxx.REGION.aws.neon.tech/neondb?sslmode=require"
+DATABASE_URL="postgresql://postgres.PROJECT_REF:PASSWORD@aws-0-REGION.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1"
+DIRECT_URL="postgresql://postgres:PASSWORD@db.PROJECT_REF.supabase.co:5432/postgres"
 ```
 
-### 2.4 Push Schema & Seed Data
+> Ganti `PROJECT_REF`, `PASSWORD`, dan `REGION` dengan nilai dari dashboard Supabase Anda.
+
+### 3.3 Push Schema & Seed Data
 
 ```bash
-npm run db:push     # buat semua tabel di Neon (sesuai prisma/schema.prisma)
+npm run db:push     # buat semua tabel di Supabase (sesuai prisma/schema.prisma)
 npm run db:seed     # isi data awal (admin, kaprodi, dosen, mahasiswa contoh)
 ```
 
@@ -87,30 +89,20 @@ Mahasiswa 1  : mhs1@ummetro.ac.id / mahasiswa12345
 
 ---
 
-## 3. Setup Storage — Supabase (Project BARU)
+## 4. Setup Storage
 
-Karena project Supabase lama tabrakan dengan aplikasi lain, buat project Supabase **baru** yang khusus untuk app ini. Kita **hanya** memakai fitur Storage-nya.
+Storage memakai **project Supabase yang sama** dengan database di atas. Tidak perlu membuat project baru.
 
-### 3.1 Buat Project Supabase Baru
+### 4.1 Ambil API Keys
 
-1. Buka **https://supabase.com/dashboard** → klik **New project**.
-2. Isi form:
-   - **Name**: `sipro-pps-storage`
-   - **Database password**: bebas (tidak akan kita pakai, simpan saja)
-   - **Region**: pilih yang sama/terdekat dengan Neon
-   - **Pricing plan**: Free
-3. Klik **Create new project** → tunggu ~1 menit.
-
-### 3.2 Ambil API Keys
-
-Pada project baru → menu **Project Settings** (ikon gerigi) → **API**:
+Pada project Supabase → **Project Settings** (ikon gerigi) → **API**:
 
 - **Project URL** → `SUPABASE_URL` & `NEXT_PUBLIC_SUPABASE_URL`
 - **Project API keys → `anon` `public`** → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - **Project API keys → `service_role` `secret`** → `SUPABASE_SERVICE_ROLE_KEY`
   > Service role key bersifat rahasia. JANGAN expose ke client.
 
-### 3.3 Tambahkan ke `.env`
+### 4.2 Tambahkan ke `.env`
 
 ```env
 SUPABASE_URL="https://<project-ref>.supabase.co"
@@ -124,7 +116,7 @@ SUPABASE_STORAGE_BUCKET="documents"
 
 ---
 
-## 4. Konfigurasi Lainnya
+## 5. Konfigurasi Lainnya
 
 ```env
 NEXT_PUBLIC_APP_URL="http://localhost:3000"   # ganti saat deploy
@@ -142,7 +134,7 @@ openssl rand -base64 48
 
 ---
 
-## 5. Jalankan Aplikasi
+## 6. Jalankan Aplikasi
 
 ```bash
 npm run dev
@@ -154,38 +146,41 @@ Login dengan kredensial seed di atas.
 
 ---
 
-## 6. Cek Setup Berhasil
+## 7. Cek Setup Berhasil
 
-| Cek                       | Cara                                                                |
-| ------------------------- | ------------------------------------------------------------------- |
-| Database Neon terhubung   | `npx prisma studio` → seharusnya tampil semua tabel & seed data.    |
+| Cek                        | Cara                                                                 |
+| -------------------------- | -------------------------------------------------------------------- |
+| Database Supabase terhubung| `npx prisma studio` → seharusnya tampil semua tabel & seed data.     |
 | Storage Supabase terhubung | Buat surat baru → upload PDF → cek di **Supabase → Storage → documents**. |
-| Auth bekerja              | Login & logout tanpa error.                                         |
+| Auth bekerja               | Login & logout tanpa error.                                          |
 
 ---
 
-## 7. Deploy ke Production (Vercel)
+## 8. Deploy ke Production (Vercel)
 
 1. Push repo ke GitHub.
 2. Buka **https://vercel.com/new** → import repo.
 3. Di tahap **Environment Variables**, salin **semua** isi `.env` ke Vercel.
 4. **Penting:** ubah `NEXT_PUBLIC_APP_URL` ke domain production (mis. `https://sipro.ummetro.ac.id`).
 5. Klik **Deploy**.
-6. Setelah deploy berhasil, jalankan migrate sekali (otomatis sudah lewat `prisma generate` di `build`, tapi schema push perlu di-jalankan dari lokal):
+6. Setelah deploy berhasil, jalankan schema push sekali dari lokal (build di Vercel hanya menjalankan `prisma generate`, bukan `db push`):
    ```bash
-   # dari lokal, terhubung ke Neon production
+   # dari lokal, terhubung ke Supabase production
    npm run db:push
    npm run db:seed   # hanya jika belum pernah seed
    ```
 
 ---
 
-## 8. Troubleshooting
+## 9. Troubleshooting
 
 ### `Error: P1001 Can't reach database server`
-- Cek `DATABASE_URL` & `DIRECT_URL` benar (perhatikan host `-pooler` vs direct).
-- Pastikan `?sslmode=require` ada di kedua URL.
-- Neon free plan auto-suspend setelah idle. Coba ulangi request, suspended branch akan resume otomatis (~1 detik).
+- Cek `DATABASE_URL` & `DIRECT_URL` benar (perhatikan host `pooler.supabase.com:6543` vs `db.<ref>.supabase.co:5432`).
+- Pastikan password URL-encoded jika mengandung karakter spesial.
+- Cek di **Supabase Dashboard → Project Settings → Database** apakah project tidak dalam keadaan paused (free tier auto-pause setelah idle 7 hari).
+
+### `prisma migrate` / `db push` gagal di pooled connection
+- `prisma migrate` & `db push` **wajib** memakai `DIRECT_URL` (port `5432`, bukan pooler). Pastikan `directUrl = env("DIRECT_URL")` ada di `prisma/schema.prisma` dan `DIRECT_URL` di `.env` terisi benar.
 
 ### `Supabase env not configured`
 - `.env` belum lengkap. Pastikan `SUPABASE_URL` dan `SUPABASE_SERVICE_ROLE_KEY` terisi.
@@ -194,27 +189,11 @@ Login dengan kredensial seed di atas.
 - Cek `SUPABASE_SERVICE_ROLE_KEY` benar (bukan `anon` key).
 - Cek di Supabase Dashboard → Storage, hapus bucket gagal lalu retry.
 
-### Migrasi data dari Supabase lama ke Neon (opsional)
-Jika ada data di project Supabase lama yang ingin dipindah ke Neon:
-
-```bash
-# Dump dari Supabase lama
-pg_dump "postgresql://postgres.<old-ref>:<pass>@aws-0-<region>.pooler.supabase.com:5432/postgres" \
-  --schema=public --data-only --no-owner --no-privileges \
-  -f data.sql
-
-# Restore ke Neon (pakai DIRECT_URL)
-psql "postgresql://USER:PASSWORD@ep-xxxx.REGION.aws.neon.tech/neondb?sslmode=require" \
-  -f data.sql
-```
-
-> Lakukan `npm run db:push` di Neon **dulu** sebelum restore data.
-
 ---
 
-## 9. Checklist Akhir
+## 10. Checklist Akhir
 
-- [ ] `.env` terisi `DATABASE_URL`, `DIRECT_URL` (Neon)
+- [ ] `.env` terisi `DATABASE_URL` (pooled) & `DIRECT_URL` (direct) dari Supabase
 - [ ] `.env` terisi `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, dan `NEXT_PUBLIC_*`
 - [ ] `JWT_SECRET` di-generate ulang (jangan pakai default)
 - [ ] `npm run db:push` sukses
