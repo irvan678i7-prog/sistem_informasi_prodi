@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { PrismaClient } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/auth";
 
@@ -6,10 +7,17 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * One-shot setup endpoint:
+ * One-shot setup endpoint.
+ *
  *  - Memastikan semua enum value yang dipakai schema saat ini ada di DB
- *    (penting kalau DB Supabase punya enum lama, mis. lowercase).
- *  - Membuat/upsert akun Administrator dari ADMIN_EMAIL & ADMIN_PASSWORD env.
+ *    (penting kalau DB Supabase punya enum lama, mis. lowercase 'admin').
+ *  - Menormalisasi nilai enum kolom Role lama (lowercase) -> uppercase
+ *    sesuai schema sekarang.
+ *  - Membuat / upsert akun Administrator dari ADMIN_EMAIL & ADMIN_PASSWORD.
+ *
+ * PENTING: ALTER TYPE ... ADD VALUE tidak boleh dijalankan via PgBouncer
+ * (transaction pooler, port 6543 di Supabase). Karena itu, untuk DDL kita
+ * pakai connection langsung lewat DIRECT_URL (port 5432).
  *
  * Auth: Bearer token = ADMIN_PASSWORD (atau body { token: ADMIN_PASSWORD }).
  * Idempotent: aman dijalankan berkali-kali.
@@ -57,6 +65,12 @@ const ENUMS: Record<string, string[]> = {
   ],
 };
 
+// Tabel & kolom yang nilai enum-nya perlu di-uppercase kalau ada data lama.
+const ROLE_COLUMNS: Array<{ table: string; column: string }> = [
+  { table: "User", column: "role" },
+  { table: "SignedDocument", column: "signerRole" },
+];
+
 function authorized(req: Request, bodyToken?: string) {
   const expected = process.env.ADMIN_PASSWORD || "";
   if (!expected) return false;
@@ -86,35 +100,71 @@ export async function POST(req: Request) {
     );
   }
 
-  const steps: Array<{
-    step: string;
-    ok: boolean;
-    detail?: string;
-  }> = [];
+  const steps: Array<{ step: string; ok: boolean; detail?: string }> = [];
 
-  // 1. Pastikan semua enum value tersedia di DB (idempotent).
-  for (const [enumName, values] of Object.entries(ENUMS)) {
-    for (const v of values) {
+  // Gunakan koneksi langsung (bukan pooler) untuk DDL.
+  const directUrl = process.env.DIRECT_URL || process.env.DATABASE_URL;
+  if (!directUrl) {
+    steps.push({
+      step: "check-env",
+      ok: false,
+      detail: "DIRECT_URL/DATABASE_URL belum di-set.",
+    });
+    return NextResponse.json({ ok: false, steps }, { status: 500 });
+  }
+
+  const directPrisma = new PrismaClient({
+    datasources: { db: { url: directUrl } },
+    log: ["error"],
+  });
+
+  try {
+    // 1) Tambah enum value yang hilang (idempotent).
+    for (const [enumName, values] of Object.entries(ENUMS)) {
+      for (const v of values) {
+        try {
+          await directPrisma.$executeRawUnsafe(
+            `ALTER TYPE "${enumName}" ADD VALUE IF NOT EXISTS '${v.replace(/'/g, "''")}'`,
+          );
+          steps.push({ step: `enum ${enumName}.${v}`, ok: true });
+        } catch (e: unknown) {
+          const msg = e instanceof Error ? e.message : String(e);
+          steps.push({
+            step: `enum ${enumName}.${v}`,
+            ok: false,
+            detail: msg,
+          });
+        }
+      }
+    }
+
+    // 2) Normalisasi nilai role lama (lowercase) -> uppercase.
+    //    Aman: cuma update kalau ada baris yang nilainya bukan uppercase.
+    for (const { table, column } of ROLE_COLUMNS) {
       try {
-        // ALTER TYPE ... ADD VALUE IF NOT EXISTS aman dijalankan berulang.
-        // Tidak bisa di dalam explicit transaction block.
-        await prisma.$executeRawUnsafe(
-          `ALTER TYPE "${enumName}" ADD VALUE IF NOT EXISTS '${v.replace(/'/g, "''")}'`,
+        const updated = await directPrisma.$executeRawUnsafe(
+          `UPDATE "${table}" SET "${column}" = UPPER("${column}"::text)::"Role" WHERE "${column}"::text <> UPPER("${column}"::text)`,
         );
-        steps.push({ step: `enum ${enumName}.${v}`, ok: true });
+        steps.push({
+          step: `normalize ${table}.${column}`,
+          ok: true,
+          detail: `${updated} baris di-update`,
+        });
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : String(e);
-        // Kalau type-nya sendiri belum ada, ini akan error -- biarkan dan teruskan.
+        // Kalau tabel/kolom tidak ada, skip saja.
         steps.push({
-          step: `enum ${enumName}.${v}`,
+          step: `normalize ${table}.${column}`,
           ok: false,
           detail: msg,
         });
       }
     }
+  } finally {
+    await directPrisma.$disconnect().catch(() => undefined);
   }
 
-  // 2. Upsert admin user dari env.
+  // 3) Upsert admin via koneksi pooler biasa.
   const adminEmail = (process.env.ADMIN_EMAIL || "").trim();
   const adminPassword = process.env.ADMIN_PASSWORD || "";
   if (!adminEmail || !adminPassword) {
