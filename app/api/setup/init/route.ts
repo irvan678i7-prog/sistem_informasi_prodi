@@ -160,6 +160,30 @@ export async function POST(req: Request) {
         });
       }
     }
+
+    // 3) Map nilai role yang TIDAK dikenal schema (mis. 'DIREKTUR' lama)
+    //    ke 'ADMIN' supaya Prisma client bisa membaca semua row.
+    const validRoles = ENUMS.Role; // ["ADMIN","KAPRODI","DOSEN","MAHASISWA"]
+    const validList = validRoles.map((r) => `'${r}'`).join(", ");
+    for (const { table, column } of ROLE_COLUMNS) {
+      try {
+        const updated = await directPrisma.$executeRawUnsafe(
+          `UPDATE "${table}" SET "${column}" = 'ADMIN'::"Role" WHERE "${column}"::text NOT IN (${validList})`,
+        );
+        steps.push({
+          step: `map-unknown-roles ${table}.${column}`,
+          ok: true,
+          detail: `${updated} baris dengan role tidak dikenal -> ADMIN`,
+        });
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : String(e);
+        steps.push({
+          step: `map-unknown-roles ${table}.${column}`,
+          ok: false,
+          detail: msg,
+        });
+      }
+    }
   } finally {
     await directPrisma.$disconnect().catch(() => undefined);
   }
