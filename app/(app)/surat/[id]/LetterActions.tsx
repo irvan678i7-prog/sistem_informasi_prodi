@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { RequestStatus } from "@prisma/client";
 import { Button } from "@/components/ui/button";
-import { Textarea, FormRow } from "@/components/ui/input";
+import { Input, Textarea, FormRow } from "@/components/ui/input";
 import { Alert } from "@/components/ui/alert";
 import { Check, X, Stamp, Eye } from "lucide-react";
 
@@ -21,15 +21,18 @@ export function LetterActions({
   const [loading, setLoading] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [reason, setReason] = useState("");
+  const [nomor, setNomor] = useState("");
 
   async function act(action: "verify" | "approve" | "reject" | "sign") {
     setErr(null);
     setLoading(action);
     try {
+      const body: Record<string, string> = { reason };
+      if (action === "sign" && nomor.trim()) body.nomor = nomor.trim();
       const res = await fetch(`/api/surat/${id}/${action}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reason }),
+        body: JSON.stringify(body),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -71,14 +74,28 @@ export function LetterActions({
         </Button>
       )}
       {status === "APPROVED" && canApprove && (
-        <Button
-          onClick={() => act("sign")}
-          disabled={!!loading}
-          className="w-full"
-        >
-          <Stamp className="w-4 h-4 mr-1.5" />
-          {loading === "sign" ? "Menerbitkan..." : "Terbitkan + TTD Elektronik"}
-        </Button>
+        <div className="space-y-2">
+          <FormRow
+            label="Nomor Surat (opsional)"
+            htmlFor={`nomor-${id}`}
+            hint="Kosongkan untuk auto-generate."
+          >
+            <Input
+              id={`nomor-${id}`}
+              value={nomor}
+              onChange={(e) => setNomor(e.target.value)}
+              placeholder="(kosong = otomatis)"
+            />
+          </FormRow>
+          <Button
+            onClick={() => act("sign")}
+            disabled={!!loading}
+            className="w-full"
+          >
+            <Stamp className="w-4 h-4 mr-1.5" />
+            {loading === "sign" ? "Menerbitkan..." : "Terbitkan + TTD Elektronik"}
+          </Button>
+        </div>
       )}
       {(status === "SUBMITTED" || status === "VERIFIED") && (
         <div className="pt-2 border-t border-slate-200 space-y-2">

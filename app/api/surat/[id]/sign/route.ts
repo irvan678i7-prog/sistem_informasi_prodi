@@ -6,34 +6,75 @@ import { signDocument } from "@/lib/sign";
 import { generateLetterNumber } from "@/lib/utils";
 
 export async function POST(
-  _req: Request,
+  req: Request,
   ctx: { params: Promise<{ id: string }> },
 ) {
   const session = await getSession();
-  if (!session) return NextResponse.json({ message: "Belum login" }, { status: 401 });
+  if (!session)
+    return NextResponse.json({ message: "Belum login" }, { status: 401 });
   if (!canApproveLetter(session.role))
     return NextResponse.json({ message: "Tidak diizinkan" }, { status: 403 });
+
+  // Ambil nomor manual dari body kalau ada.
+  let manualNomor = "";
+  try {
+    const body = (await req.json()) as { nomor?: string };
+    manualNomor = (body?.nomor ?? "").toString().trim();
+  } catch {
+    manualNomor = "";
+  }
 
   const { id } = await ctx.params;
   const letter = await prisma.letterRequest.findUnique({
     where: { id },
     include: { mahasiswa: { include: { prodi: true } } },
   });
-  if (!letter) return NextResponse.json({ message: "Tidak ditemukan" }, { status: 404 });
+  if (!letter)
+    return NextResponse.json({ message: "Tidak ditemukan" }, { status: 404 });
   if (letter.status !== "APPROVED")
-    return NextResponse.json({ message: "Surat belum disetujui" }, { status: 400 });
+    return NextResponse.json(
+      { message: "Surat belum disetujui" },
+      { status: 400 },
+    );
 
-  // Generate nomor urut tahun ini per type
-  const yearStart = new Date(new Date().getFullYear(), 0, 1);
-  const count = await prisma.letterRequest.count({
-    where: { type: letter.type, nomor: { not: null }, createdAt: { gte: yearStart } },
-  });
-  const seq = count + 1;
-  const nomor = generateLetterNumber(seq);
+  // Tentukan nomor: manual (kalau diisi) atau auto.
+  let nomor: string;
+  if (manualNomor) {
+    if (manualNomor.length > 120) {
+      return NextResponse.json(
+        { message: "Nomor surat terlalu panjang" },
+        { status: 400 },
+      );
+    }
+    const dup = await prisma.letterRequest.findFirst({
+      where: { nomor: manualNomor, NOT: { id: letter.id } },
+      select: { id: true },
+    });
+    if (dup) {
+      return NextResponse.json(
+        { message: `Nomor "${manualNomor}" sudah dipakai surat lain` },
+        { status: 400 },
+      );
+    }
+    nomor = manualNomor;
+  } else {
+    const yearStart = new Date(new Date().getFullYear(), 0, 1);
+    const count = await prisma.letterRequest.count({
+      where: {
+        type: letter.type,
+        nomor: { not: null },
+        createdAt: { gte: yearStart },
+      },
+    });
+    nomor = generateLetterNumber(count + 1);
+  }
 
   const signer = await prisma.user.findUnique({ where: { id: session.uid } });
   if (!signer)
-    return NextResponse.json({ message: "Signer tidak valid" }, { status: 400 });
+    return NextResponse.json(
+      { message: "Signer tidak valid" },
+      { status: 400 },
+    );
 
   const doc = await signDocument({
     kind: "SURAT",
@@ -81,7 +122,7 @@ export async function POST(
       action: "LETTER_SIGN",
       entity: "LetterRequest",
       entityId: id,
-      metadata: { nomor, code: doc.code },
+      metadata: { nomor, code: doc.code, nomorMode: manualNomor ? "manual" : "auto" },
     },
   });
   return NextResponse.json({ ok: true, nomor, code: doc.code });

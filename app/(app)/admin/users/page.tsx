@@ -59,9 +59,14 @@ export default async function AdminUsersPage({
             Akun mahasiswa, dosen, kaprodi, dan administrator.
           </p>
         </div>
-        <Link href="/admin/users/new" className="btn-primary">
-          + Tambah User
-        </Link>
+        <div className="flex gap-2">
+          <Link href="/admin/users/bulk" className="btn-secondary">
+            Bulk Upload Mahasiswa
+          </Link>
+          <Link href="/admin/users/new" className="btn-primary">
+            + Tambah User
+          </Link>
+        </div>
       </div>
 
       <Card>
