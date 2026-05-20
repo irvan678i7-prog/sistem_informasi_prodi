@@ -158,17 +158,79 @@ Login dengan kredensial seed di atas.
 
 ## 8. Deploy ke Production (Vercel)
 
+Project ini sudah dilengkapi `vercel.json` (preset Next.js, region `sin1` / Singapore agar dekat dengan Supabase Southeast Asia).
+
+### 8.1 Opsi A — Lewat Vercel Dashboard (UI)
+
 1. Push repo ke GitHub.
-2. Buka **https://vercel.com/new** → import repo.
-3. Di tahap **Environment Variables**, salin **semua** isi `.env` ke Vercel.
-4. **Penting:** ubah `NEXT_PUBLIC_APP_URL` ke domain production (mis. `https://sipro.ummetro.ac.id`).
+2. Buka **https://vercel.com/new** → **Import** repo `sistem_informasi_prodi`.
+3. **Framework Preset**: pilih **Next.js** (otomatis terdeteksi).
+4. Pada tahap **Environment Variables**, tambahkan **semua** variabel berikut (salin nilainya dari `.env` lokal Anda):
+
+   | Key                              | Catatan                                                                       |
+   | -------------------------------- | ----------------------------------------------------------------------------- |
+   | `DATABASE_URL`                   | Pooled, port `6543`, **wajib** `?pgbouncer=true&connection_limit=1`           |
+   | `DIRECT_URL`                     | Direct, port `5432` — dipakai `prisma migrate` / `db push`                    |
+   | `SUPABASE_URL`                   | `https://<project-ref>.supabase.co`                                           |
+   | `SUPABASE_SERVICE_ROLE_KEY`      | Service role secret. **Jangan** expose ke client.                             |
+   | `NEXT_PUBLIC_SUPABASE_URL`       | Sama dengan `SUPABASE_URL`                                                    |
+   | `NEXT_PUBLIC_SUPABASE_ANON_KEY`  | Anon public key                                                               |
+   | `SUPABASE_STORAGE_BUCKET`        | `documents` (atau bebas)                                                      |
+   | `JWT_SECRET`                     | Generate: `openssl rand -base64 48`                                           |
+   | `NEXT_PUBLIC_APP_URL`            | Domain production, mis. `https://sipro.vercel.app`                            |
+   | `ADMIN_EMAIL`                    | Email admin default (dipakai script seed)                                     |
+   | `ADMIN_PASSWORD`                 | Password admin default (dipakai script seed)                                  |
+
+   > Pastikan ke-empat scope `Production`, `Preview`, `Development` dicentang untuk variabel yang dipakai semua environment.
 5. Klik **Deploy**.
-6. Setelah deploy berhasil, jalankan schema push sekali dari lokal (build di Vercel hanya menjalankan `prisma generate`, bukan `db push`):
+6. Setelah deploy berhasil, jalankan **schema push** sekali dari lokal (build Vercel hanya menjalankan `prisma generate`, bukan `db push`):
    ```bash
-   # dari lokal, terhubung ke Supabase production
+   # pastikan .env lokal Anda mengarah ke project Supabase production
    npm run db:push
    npm run db:seed   # hanya jika belum pernah seed
    ```
+7. Buka URL Vercel Anda → login dengan kredensial dari output seed.
+
+### 8.2 Opsi B — Lewat Vercel CLI (lebih cepat)
+
+```bash
+# 1. Install CLI dan login (kalau belum)
+npm i -g vercel
+vercel login
+
+# 2. Link repo lokal ke project Vercel
+cd sistem_informasi_prodi
+vercel link            # ikuti prompt: pilih scope & beri nama project, mis. sipro
+
+# 3. Tarik env yang sudah ada di Vercel (jika ada)
+vercel env pull .env.production
+
+# 4. Tambahkan env baru (ulangi untuk setiap variabel di tabel 8.1)
+vercel env add DATABASE_URL production
+vercel env add DIRECT_URL production
+vercel env add SUPABASE_URL production
+vercel env add SUPABASE_SERVICE_ROLE_KEY production
+vercel env add NEXT_PUBLIC_SUPABASE_URL production
+vercel env add NEXT_PUBLIC_SUPABASE_ANON_KEY production
+vercel env add SUPABASE_STORAGE_BUCKET production
+vercel env add JWT_SECRET production
+vercel env add NEXT_PUBLIC_APP_URL production
+vercel env add ADMIN_EMAIL production
+vercel env add ADMIN_PASSWORD production
+
+# 5. Deploy ke production
+vercel deploy --prod
+
+# 6. Push schema & seed (dari lokal, mengarah ke Supabase production)
+npm run db:push
+npm run db:seed
+```
+
+### 8.3 Custom Domain (opsional)
+
+1. Vercel Dashboard → project → **Settings → Domains** → **Add Domain**.
+2. Ikuti instruksi DNS (CNAME/A record).
+3. Setelah domain aktif, **update** env var `NEXT_PUBLIC_APP_URL` ke domain baru lalu **Redeploy**.
 
 ---
 
@@ -181,6 +243,14 @@ Login dengan kredensial seed di atas.
 
 ### `prisma migrate` / `db push` gagal di pooled connection
 - `prisma migrate` & `db push` **wajib** memakai `DIRECT_URL` (port `5432`, bukan pooler). Pastikan `directUrl = env("DIRECT_URL")` ada di `prisma/schema.prisma` dan `DIRECT_URL` di `.env` terisi benar.
+
+### Vercel: deploy sukses tapi runtime error `prepared statement "sX" already exists` / `P05`
+- Penyebab: `DATABASE_URL` tidak memakai mode pooler (`?pgbouncer=true&connection_limit=1`).
+- Cek di Vercel → Project → Settings → Environment Variables, pastikan `DATABASE_URL` memakai host `pooler.supabase.com:6543` dan diakhiri `?pgbouncer=true&connection_limit=1`.
+
+### Vercel: `Error: P1001 Can't reach database` atau IPv6/network error
+- Beberapa project Supabase lama hanya menyediakan koneksi IPv6 langsung; pakailah connection string **Pooler** (port 6543) yang sudah IPv4-compatible.
+- Free tier Supabase auto-pause setelah idle 7 hari → buka dashboard untuk meng-unpause.
 
 ### `Supabase env not configured`
 - `.env` belum lengkap. Pastikan `SUPABASE_URL` dan `SUPABASE_SERVICE_ROLE_KEY` terisi.

@@ -41,7 +41,17 @@ Aplikasi internal Program Pascasarjana UM Metro untuk pengelolaan:
 
 ## Setup Lengkap
 
-Untuk panduan setup detail (Supabase Database + Storage + deploy), lihat **[SETUP.md](./SETUP.md)**.
+Untuk panduan setup detail (Supabase Database + Storage) lihat **[SETUP.md](./SETUP.md)**.
+
+## Deploy ke Vercel
+
+Repo sudah dilengkapi `vercel.json` (preset Next.js, region `sin1`). Ringkasan langkah:
+
+1. **Import** repo di https://vercel.com/new → framework Next.js auto-detect.
+2. Salin **semua** isi `.env.example` ke **Environment Variables** Vercel (lihat tabel lengkap di [SETUP.md § 8](./SETUP.md#8-deploy-ke-production-vercel)).
+3. Pastikan `DATABASE_URL` memakai pooler (`pooler.supabase.com:6543?pgbouncer=true&connection_limit=1`) dan `DIRECT_URL` memakai direct (`db.<ref>.supabase.co:5432`).
+4. **Deploy**, lalu dari lokal jalankan sekali: `npm run db:push && npm run db:seed`.
+5. Login dengan kredensial yang tampil di output seed (default lihat tabel di bawah).
 
 ## Scripts
 
