@@ -88,6 +88,12 @@ export async function GET() {
     ) {
       result.hint =
         "Tabel belum dibuat di DB production. Jalankan dari lokal (dengan .env mengarah ke DB production): `npm run db:push` lalu `npm run db:seed`.";
+    } else if (
+      /invalid input value for enum/i.test(err.message || "") ||
+      /22P02/.test(err.message || "")
+    ) {
+      result.hint =
+        "Enum di DB tidak match dengan schema (mis. nilai ADMIN belum ada di enum Role). Buka /admin/setup, masukkan ADMIN_PASSWORD, lalu klik 'Jalankan Setup' untuk memperbaikinya otomatis.";
     }
     return NextResponse.json(result, { status: 500 });
   }
