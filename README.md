@@ -10,9 +10,9 @@ Aplikasi internal Program Pascasarjana UM Metro untuk pengelolaan:
 ## Tech Stack
 
 - **Next.js 14** (App Router, Server Actions)
-- **PostgreSQL** di **Neon** (serverless, free tier)
+- **Supabase Postgres** (database + storage dalam satu project)
 - **Prisma** ORM
-- **Supabase Storage** (bucket `documents`) — project terpisah
+- **Supabase Storage** (bucket `documents`)
 - **Custom Auth**: JWT + bcrypt (cookie-based session)
 - **Tailwind CSS** + **Lucide Icons**
 - **pdf-lib** + **qrcode** untuk pembuatan & verifikasi dokumen
@@ -41,7 +41,7 @@ Aplikasi internal Program Pascasarjana UM Metro untuk pengelolaan:
 
 ## Setup Lengkap
 
-Untuk panduan setup detail (Neon + Supabase Storage + deploy), lihat **[SETUP.md](./SETUP.md)**.
+Untuk panduan setup detail (Supabase Database + Storage + deploy), lihat **[SETUP.md](./SETUP.md)**.
 
 ## Scripts
 
