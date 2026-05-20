@@ -12,10 +12,7 @@ const ROLE_OPTIONS: Role[] = [
   "MAHASISWA",
   "DOSEN",
   "KAPRODI",
-  "ADMIN_PRODI",
-  "WAKIL_DIREKTUR",
-  "DIREKTUR",
-  "ADMIN_SISTEM",
+  "ADMIN",
 ];
 
 export function UserForm({
@@ -40,11 +37,7 @@ export function UserForm({
   const [loading, setLoading] = useState(false);
 
   const isMahasiswa = role === "MAHASISWA";
-  const isDosen =
-    role === "DOSEN" ||
-    role === "KAPRODI" ||
-    role === "WAKIL_DIREKTUR" ||
-    role === "DIREKTUR";
+  const isDosen = role === "DOSEN" || role === "KAPRODI";
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();

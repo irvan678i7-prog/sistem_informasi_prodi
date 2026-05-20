@@ -12,7 +12,7 @@ export async function POST(
   const { id } = await ctx.params;
   const tesis = await prisma.tesis.findUnique({ where: { id } });
   if (!tesis) return NextResponse.json({ message: "Tidak ditemukan" }, { status: 404 });
-  if (tesis.paId !== session.uid && session.role !== "ADMIN_SISTEM")
+  if (tesis.paId !== session.uid && session.role !== "ADMIN")
     return NextResponse.json({ message: "Hanya PA terkait" }, { status: 403 });
 
   let reason = "";

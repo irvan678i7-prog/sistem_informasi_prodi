@@ -10,11 +10,8 @@ datasource db {
 }
 
 enum Role {
-  ADMIN_SISTEM
-  ADMIN_PRODI
+  ADMIN
   KAPRODI
-  WAKIL_DIREKTUR
-  DIREKTUR
   DOSEN
   MAHASISWA
 }

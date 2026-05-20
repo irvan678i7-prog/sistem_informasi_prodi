@@ -114,12 +114,11 @@ export default async function PengajuanJudulPage() {
   if (
     user.role === "DOSEN" ||
     user.role === "KAPRODI" ||
-    user.role === "ADMIN_PRODI" ||
-    user.role === "ADMIN_SISTEM"
+    user.role === "ADMIN"
   ) {
     const items = await prisma.tesis.findMany({
       where: {
-        ...(user.role === "ADMIN_SISTEM" ? {} : { paId: user.id }),
+        ...(user.role === "ADMIN" ? {} : { paId: user.id }),
         judulStatus: "SUBMITTED",
       },
       include: { mahasiswa: { include: { prodi: true } } },

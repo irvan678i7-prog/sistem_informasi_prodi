@@ -38,14 +38,32 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">
-          Halo, {user.name.split(" ")[0]} 👋
-        </h1>
-        <p className="text-sm text-slate-500">
-          {ROLE_LABEL[user.role]}
-          {user.prodi ? ` · ${user.prodi.name}` : ""} · NIM/NIP {user.nimNip}
-        </p>
+      <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-brand-700 via-brand-600 to-brand-500 text-white p-6 shadow-sm">
+        <div
+          aria-hidden
+          className="absolute -right-8 -top-8 w-44 h-44 rounded-full bg-white/10 blur-xl"
+        />
+        <div
+          aria-hidden
+          className="absolute -right-2 -bottom-10 w-36 h-36 rounded-full bg-white/10 blur-2xl"
+        />
+        <div className="relative flex items-center gap-4">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo-um-metro.png"
+            alt="UM Metro"
+            className="w-14 h-14 object-contain bg-white/10 rounded-lg p-1"
+          />
+          <div>
+            <h1 className="text-2xl font-bold">
+              Halo, {user.name.split(" ")[0]} 👋
+            </h1>
+            <p className="text-sm text-white/85">
+              {ROLE_LABEL[user.role]}
+              {user.prodi ? ` · ${user.prodi.name}` : ""} · NIM/NIP {user.nimNip}
+            </p>
+          </div>
+        </div>
       </div>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -184,7 +202,7 @@ export default async function DashboardPage() {
                 <Link href="/surat" className="btn-secondary">
                   Antrian Surat
                 </Link>
-                {user.role === "ADMIN_SISTEM" && (
+                {user.role === "ADMIN" && (
                   <>
                     <Link href="/admin/users" className="btn-secondary">
                       Kelola User

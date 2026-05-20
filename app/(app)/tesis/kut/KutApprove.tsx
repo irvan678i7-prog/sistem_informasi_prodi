@@ -58,9 +58,7 @@ export function KutApprove({
             Setujui sbg P2
           </Button>
         )}
-        {(role === "KAPRODI" ||
-          role === "WAKIL_DIREKTUR" ||
-          role === "DIREKTUR") && (
+        {role === "KAPRODI" && (
           <Button onClick={() => call("KAPRODI")} disabled={!!loading} variant="secondary">
             Setujui sbg Kaprodi
           </Button>

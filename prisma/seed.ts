@@ -21,7 +21,7 @@ async function main() {
     },
   });
 
-  // 2) Admin Sistem
+  // 2) Administrator
   const adminPwd = await hash("admin12345");
   const admin = await prisma.user.upsert({
     where: { email: "admin@ummetro.ac.id" },
@@ -29,27 +29,13 @@ async function main() {
     create: {
       email: "admin@ummetro.ac.id",
       nimNip: "ADM-0001",
-      name: "Administrator Sistem",
+      name: "Administrator",
       hashedPassword: adminPwd,
-      role: "ADMIN_SISTEM",
+      role: "ADMIN",
     },
   });
 
-  // 3) Direktur
-  const direkturPwd = await hash("direktur12345");
-  await prisma.user.upsert({
-    where: { email: "direktur@ummetro.ac.id" },
-    update: {},
-    create: {
-      email: "direktur@ummetro.ac.id",
-      nimNip: "0023056803",
-      name: "Direktur Pascasarjana",
-      hashedPassword: direkturPwd,
-      role: "DIREKTUR",
-    },
-  });
-
-  // 4) Kaprodi
+  // 3) Kaprodi
   const kaprodiPwd = await hash("kaprodi12345");
   const kaprodi = await prisma.user.upsert({
     where: { email: "kaprodi.mmp@ummetro.ac.id" },
@@ -127,15 +113,15 @@ async function main() {
 
   // 7) App settings default
   const defaults: Record<string, string> = {
-    "institusi.namaPascasarjana": "Program Pascasarjana UM Metro",
-    "institusi.alamat": "Jl. Ki Hajar Dewantara No. 116, Iringmulyo, Metro",
+    "institusi.namaPascasarjana": "Program Pascasarjana",
+    "institusi.alamat":
+      "Jl. Ki Hajar Dewantara No. 116, Iringmulyo, Kota Metro, Lampung 34111",
     "institusi.telp": "(0725) 42445",
     "institusi.email": "pps@ummetro.ac.id",
     "institusi.website": "https://pps.ummetro.ac.id",
-    "ttd.direktur.name": "Direktur Pascasarjana",
-    "ttd.direktur.nidn": "0023056803",
-    "ttd.wadir.name": "Wakil Direktur",
-    "ttd.wadir.nidn": "0011057002",
+    "ttd.kaprodi.name": "Dr. Kaprodi MMP",
+    "ttd.kaprodi.nidn": "0011017001",
+    "ttd.kaprodi.image": "",
   };
   for (const [key, value] of Object.entries(defaults)) {
     await prisma.appSetting.upsert({
@@ -146,11 +132,10 @@ async function main() {
   }
 
   console.log("Done. Login credentials:");
-  console.log("  Admin Sistem : admin@ummetro.ac.id / admin12345");
-  console.log("  Direktur     : direktur@ummetro.ac.id / direktur12345");
-  console.log("  Kaprodi MMP  : kaprodi.mmp@ummetro.ac.id / kaprodi12345");
-  console.log("  Dosen 1      : dosen1@ummetro.ac.id / dosen12345");
-  console.log("  Mahasiswa 1  : mhs1@ummetro.ac.id / mahasiswa12345");
+  console.log("  Admin       : admin@ummetro.ac.id / admin12345");
+  console.log("  Kaprodi MMP : kaprodi.mmp@ummetro.ac.id / kaprodi12345");
+  console.log("  Dosen 1     : dosen1@ummetro.ac.id / dosen12345");
+  console.log("  Mahasiswa 1 : mhs1@ummetro.ac.id / mahasiswa12345");
   void admin;
 }
 

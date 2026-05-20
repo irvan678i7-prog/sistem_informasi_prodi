@@ -14,13 +14,7 @@ import { SKPembimbingPanel } from "./SKPembimbingPanel";
 export default async function SKPembimbingPage() {
   const user = await getCurrentUser();
   if (!user) return null;
-  if (
-    user.role !== "KAPRODI" &&
-    user.role !== "WAKIL_DIREKTUR" &&
-    user.role !== "DIREKTUR" &&
-    user.role !== "ADMIN_SISTEM"
-  )
-    redirect("/tesis");
+  if (user.role !== "KAPRODI" && user.role !== "ADMIN") redirect("/tesis");
 
   const where = user.prodiId
     ? { mahasiswa: { prodiId: user.prodiId } }

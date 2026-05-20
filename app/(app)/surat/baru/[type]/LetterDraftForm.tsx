@@ -93,7 +93,7 @@ export function LetterDraftForm({
       <div className="space-y-4">
         <Alert variant="warning" title="Pratinjau Surat">
           Periksa kembali isian Anda. Setelah dikirim, surat akan masuk antrian
-          admin prodi/pembimbing untuk diverifikasi.
+          Kaprodi untuk diverifikasi dan disahkan.
         </Alert>
         <LetterDocument
           type={type}
@@ -108,7 +108,7 @@ export function LetterDraftForm({
           </Button>
           <Button onClick={onSubmit} disabled={submitting}>
             <Send className="w-4 h-4 mr-1.5" />
-            {submitting ? "Mengirim..." : "Kirim ke Admin Prodi"}
+            {submitting ? "Mengirim..." : "Kirim ke Kaprodi"}
           </Button>
         </div>
       </div>

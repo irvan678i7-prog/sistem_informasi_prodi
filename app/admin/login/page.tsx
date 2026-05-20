@@ -9,12 +9,15 @@ export default function AdminLoginPage() {
     <main className="min-h-screen bg-slate-900 text-white flex items-center justify-center p-6">
       <div className="w-full max-w-md">
         <div className="text-center mb-6">
-          <Link href="/" className="inline-flex items-center gap-2">
-            <div className="w-12 h-12 rounded-lg bg-white text-brand-700 grid place-items-center font-bold text-xl">
-              S
-            </div>
+          <Link href="/" className="inline-flex items-center justify-center">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logo-um-metro.png"
+              alt="UM Metro"
+              className="w-16 h-16 object-contain bg-white rounded-full p-1"
+            />
           </Link>
-          <h1 className="text-2xl font-bold mt-3">Admin Sistem</h1>
+          <h1 className="text-2xl font-bold mt-3">Administrator</h1>
           <p className="text-sm text-slate-300 mt-1">
             Sistem Informasi Prodi · PPs UM Metro
           </p>

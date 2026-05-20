@@ -9,10 +9,13 @@ export default function LoginPage() {
     <main className="min-h-screen bg-gradient-to-b from-brand-50 via-white to-white flex items-center justify-center p-6">
       <div className="w-full max-w-md">
         <div className="text-center mb-6">
-          <Link href="/" className="inline-flex items-center gap-2">
-            <div className="w-12 h-12 rounded-lg bg-brand-600 text-white grid place-items-center font-bold text-xl">
-              S
-            </div>
+          <Link href="/" className="inline-flex items-center justify-center">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logo-um-metro.png"
+              alt="UM Metro"
+              className="w-16 h-16 object-contain"
+            />
           </Link>
           <h1 className="text-2xl font-bold mt-3 text-slate-900">
             Masuk SIPRO
@@ -29,7 +32,7 @@ export default function LoginPage() {
           </div>
         </div>
         <p className="text-center text-xs text-slate-500 mt-4">
-          Login sebagai admin sistem?{" "}
+          Login sebagai administrator?{" "}
           <Link href="/admin/login" className="text-brand-700 underline">
             Klik di sini
           </Link>
