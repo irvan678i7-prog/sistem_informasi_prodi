@@ -10,7 +10,6 @@ import {
   Building2,
   ClipboardList,
   ShieldCheck,
-  Bell,
   Cog,
   FileText,
 } from "lucide-react";
@@ -43,11 +42,6 @@ const NAV: NavItem[] = [
     label: "Bimbingan",
     icon: ClipboardList,
     roles: ["DOSEN", "KAPRODI", "MAHASISWA"],
-  },
-  {
-    href: "/notifikasi",
-    label: "Notifikasi",
-    icon: Bell,
   },
   {
     href: "/tesis/pembimbing",
@@ -87,13 +81,7 @@ const NAV: NavItem[] = [
   },
 ];
 
-export function Sidebar({
-  role,
-  unreadCount = 0,
-}: {
-  role: Role;
-  unreadCount?: number;
-}) {
+export function Sidebar({ role }: { role: Role }) {
   const pathname = usePathname() ?? "";
   const items = NAV.filter((n) => !n.roles || n.roles.includes(role));
 
@@ -135,11 +123,6 @@ export function Sidebar({
               >
                 <Icon className="w-4 h-4" />
                 <span className="flex-1">{item.label}</span>
-                {item.href === "/notifikasi" && unreadCount > 0 && (
-                  <span className="bg-red-600 text-white text-[10px] leading-none rounded-full min-w-[16px] h-4 px-1 grid place-items-center">
-                    {unreadCount > 99 ? "99+" : unreadCount}
-                  </span>
-                )}
               </Link>
             );
           })}

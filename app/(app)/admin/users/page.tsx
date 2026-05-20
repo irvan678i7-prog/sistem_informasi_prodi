@@ -87,7 +87,7 @@ export default async function AdminUsersPage({
                 name="q"
                 defaultValue={q}
                 className="field"
-                placeholder="Nama / NIM-NIP / Email"
+                placeholder="Nama / NIM-NIDN / Email"
               />
             </div>
             <div>
@@ -121,7 +121,7 @@ export default async function AdminUsersPage({
             <thead className="text-left text-slate-500 bg-slate-50 border-b border-slate-200">
               <tr>
                 <th className="px-4 py-2">Nama</th>
-                <th className="px-4 py-2">NIM/NIP</th>
+                <th className="px-4 py-2">NIM/NIDN</th>
                 <th className="px-4 py-2">Email</th>
                 <th className="px-4 py-2">Peran</th>
                 <th className="px-4 py-2">Prodi</th>

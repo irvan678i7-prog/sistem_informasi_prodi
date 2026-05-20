@@ -6,7 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Textarea, FormRow } from "@/components/ui/input";
 import { Alert } from "@/components/ui/alert";
 
-export function JudulAction({ tesisId }: { tesisId: string }) {
+export function JudulAction({
+  tesisId,
+  mode = "pa",
+}: {
+  tesisId: string;
+  mode?: "pa" | "kaprodi";
+}) {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -20,6 +26,26 @@ export function JudulAction({ tesisId }: { tesisId: string }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ which }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setErr(data.message || "Gagal");
+        setLoading(null);
+        return;
+      }
+      router.refresh();
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Gagal";
+      setErr(msg);
+    }
+    setLoading(null);
+  }
+  async function finalize() {
+    setErr(null);
+    setLoading("finalize");
+    try {
+      const res = await fetch(`/api/tesis/${tesisId}/judul/finalize`, {
+        method: "POST",
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -60,14 +86,24 @@ export function JudulAction({ tesisId }: { tesisId: string }) {
   return (
     <div className="space-y-3 pt-2 border-t border-slate-200">
       {err && <Alert variant="error">{err}</Alert>}
-      <div className="flex flex-wrap gap-2">
-        <Button onClick={() => approve(1)} disabled={!!loading}>
-          Setujui Judul 1
-        </Button>
-        <Button onClick={() => approve(2)} disabled={!!loading}>
-          Setujui Judul 2
-        </Button>
-      </div>
+      {mode === "pa" ? (
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={() => approve(1)} disabled={!!loading}>
+            Setujui Judul 1
+          </Button>
+          <Button onClick={() => approve(2)} disabled={!!loading}>
+            Setujui Judul 2
+          </Button>
+        </div>
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={finalize} disabled={!!loading}>
+            {loading === "finalize"
+              ? "Memproses..."
+              : "Finalisasi Judul (Kaprodi)"}
+          </Button>
+        </div>
+      )}
       <FormRow label="Alasan Penolakan (opsional)" htmlFor={`r-${tesisId}`}>
         <Textarea
           id={`r-${tesisId}`}
@@ -76,7 +112,7 @@ export function JudulAction({ tesisId }: { tesisId: string }) {
         />
       </FormRow>
       <Button variant="danger" onClick={reject} disabled={!!loading}>
-        Tolak Semua
+        Tolak
       </Button>
     </div>
   );

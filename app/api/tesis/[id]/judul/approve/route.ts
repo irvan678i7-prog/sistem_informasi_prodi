@@ -31,26 +31,51 @@ export async function POST(
     where: { id },
     data: {
       judulFinal,
-      judulStatus: "APPROVED",
-      stage: "PROPOSAL",
+      // PA hanya merekomendasikan; status menunggu finalisasi Kaprodi.
+      judulStatus: "VERIFIED",
       timeline: {
         create: {
-          stage: "JUDUL_APPROVED",
-          note: `Judul ke-${which} disetujui PA`,
+          stage: "JUDUL_PA_APPROVED",
+          note: `Judul ke-${which} disetujui PA, menunggu finalisasi Kaprodi`,
           actorId: session.uid,
         },
       },
     },
   });
 
-  await prisma.notification.create({
-    data: {
-      userId: tesis.mahasiswaId,
-      title: "Judul Tesis Disetujui",
-      body: `Judul Anda telah disetujui PA. Silakan lanjut ke penyusunan proposal.`,
-      link: `/tesis`,
-    },
+  // Notifikasi: ke mahasiswa & ke Kaprodi prodi terkait.
+  const mhs = await prisma.user.findUnique({
+    where: { id: tesis.mahasiswaId },
+    select: { name: true, nimNip: true, prodiId: true },
   });
+  const notifs: Array<{
+    userId: string;
+    title: string;
+    body: string;
+    link: string;
+  }> = [
+    {
+      userId: tesis.mahasiswaId,
+      title: "Judul Disetujui PA",
+      body: `Judul Anda telah disetujui PA dan diteruskan ke Kaprodi untuk finalisasi.`,
+      link: `/tesis/judul`,
+    },
+  ];
+  if (mhs?.prodiId) {
+    const kaprodiList = await prisma.user.findMany({
+      where: { role: "KAPRODI", prodiId: mhs.prodiId, isActive: true },
+      select: { id: true },
+    });
+    for (const k of kaprodiList) {
+      notifs.push({
+        userId: k.id,
+        title: "Judul Menunggu Finalisasi",
+        body: `${mhs.name} (${mhs.nimNip}) telah disetujui PA. Silakan finalisasi.`,
+        link: `/tesis/judul`,
+      });
+    }
+  }
+  await prisma.notification.createMany({ data: notifs });
 
   await prisma.auditLog.create({
     data: {

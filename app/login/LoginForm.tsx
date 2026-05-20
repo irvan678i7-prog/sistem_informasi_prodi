@@ -41,7 +41,7 @@ export function LoginForm({ scope }: { scope: "user" | "admin" }) {
         let msg = data.message;
         if (!msg) {
           if (res.status === 401) {
-            msg = "Email/NIM/NIP atau password salah";
+            msg = "Email/NIM/NIDN atau password salah";
           } else if (res.status === 403) {
             msg =
               scope === "admin"
@@ -78,7 +78,7 @@ export function LoginForm({ scope }: { scope: "user" | "admin" }) {
     <form onSubmit={onSubmit} className="space-y-4">
       {err && <Alert variant="error">{err}</Alert>}
       <FormRow
-        label={scope === "admin" ? "Email Admin" : "NIM / NIP / Email"}
+        label={scope === "admin" ? "Email Admin" : "NIM / NIDN / Email"}
         htmlFor="identifier"
         required
       >

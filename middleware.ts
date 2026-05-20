@@ -1,23 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const PUBLIC_PATHS = [
-  "/",
+const PUBLIC_PREFIXES = [
   "/login",
   "/admin/login",
+  "/admin/setup",
   "/verify",
   "/api/auth/login",
   "/api/auth/logout",
-  "/_next",
-  "/favicon.ico",
+  "/api/health",
+  "/api/setup",
 ];
+
+function isPublic(pathname: string): boolean {
+  if (pathname === "/") return true;
+  if (pathname.startsWith("/_next")) return true;
+  if (pathname.startsWith("/favicon")) return true;
+  for (const prefix of PUBLIC_PREFIXES) {
+    if (pathname === prefix) return true;
+    if (pathname.startsWith(prefix + "/")) return true;
+  }
+  return false;
+}
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  if (PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"))) {
-    return NextResponse.next();
-  }
-  // Auth check is done in pages via getSession() for richer UX.
-  // Middleware just blocks unauthenticated access to API/protected pages.
+  if (isPublic(pathname)) return NextResponse.next();
+
   const token = req.cookies.get("sipro_session")?.value;
   if (!token) {
     const url = req.nextUrl.clone();

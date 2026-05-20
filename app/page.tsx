@@ -73,11 +73,8 @@ export default function HomePage() {
           <Link href="/verify" className="btn-ghost">
             Verifikasi QR
           </Link>
-          <Link href="/login" className="btn-secondary">
+          <Link href="/login" className="btn-primary">
             Masuk
-          </Link>
-          <Link href="/admin/login" className="btn-primary">
-            Admin
           </Link>
         </div>
       </header>
@@ -109,7 +106,7 @@ export default function HomePage() {
                 href="/login"
                 className="btn-primary text-base px-5 py-3 inline-flex items-center"
               >
-                Masuk dengan NIM / NIP
+                Masuk dengan NIM / NIDN
                 <ArrowRight className="w-4 h-4 ml-1.5" />
               </Link>
               <Link

@@ -196,7 +196,7 @@ export function LetterDocument(props: LetterDocumentProps) {
           <p className="font-semibold underline">
             {signer?.name || "(Belum ditandatangani)"}
           </p>
-          {signer?.nip ? <p>NIP/NIDN: {signer.nip}</p> : null}
+          {signer?.nip ? <p>NIDN: {signer.nip}</p> : null}
         </div>
       </div>
 
@@ -293,17 +293,35 @@ function LetterBody({
       return (
         <div className="text-sm space-y-2">
           <p>
-            Tesis yang bersangkutan telah lulus uji plagiasi dengan rincian:
+            Berdasarkan surat hasil uji plagiasi yang diterbitkan oleh Unit
+            Penjaminan & Inovasi (UPI) Universitas Muhammadiyah Metro, tesis
+            yang bersangkutan dinyatakan{" "}
+            <strong>memenuhi standar bebas plagiasi</strong>.
           </p>
           <div className="ml-6">
             <Field k="Judul Tesis" v={String(payload.judulTesis || "-")} />
             <Field
-              k="Persentase Similarity"
-              v={`${String(payload.persenSimilarity ?? "-")}%`}
+              k="Bukti UPI"
+              v={
+                payload.linkBukti ? (
+                  <a
+                    href={String(payload.linkBukti)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-700 underline break-all"
+                  >
+                    {String(payload.linkBukti)}
+                  </a>
+                ) : (
+                  "-"
+                )
+              }
             />
-            <Field k="Alat Uji" v={String(payload.alatUji || "-")} />
-            <Field k="Tanggal Uji" v={String(payload.tanggalUji || "-")} />
           </div>
+          <p className="text-xs text-slate-600">
+            Surat bukti dari UPI UM Metro dapat diunduh / dilihat melalui
+            tautan di atas.
+          </p>
         </div>
       );
     default:
