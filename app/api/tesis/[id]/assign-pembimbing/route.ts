@@ -8,19 +8,18 @@ import { generateLetterNumber } from "@/lib/utils";
 const Body = z.object({
   pembimbing1Id: z.string().min(1),
   pembimbing2Id: z.string().min(1).nullable().optional(),
+  // Nomor SK opsional. Jika diisi Kaprodi, dipakai apa adanya.
+  // Jika kosong, akan digenerate otomatis (urut tahun).
+  nomor: z.string().trim().max(120).optional().nullable(),
 });
 
 /**
  * Assign / re-assign pembimbing for a tesis (Kaprodi only).
  *
- * Berbeda dengan endpoint /sk-pembimbing yang lama (yang hanya boleh saat
- * judul approved & belum punya pembimbing), endpoint ini lebih fleksibel:
- *
- *  - Bisa dipakai TANPA syarat judul approved (Kaprodi boleh menetapkan
- *    pembimbing kapan saja).
+ *  - Bisa dipakai TANPA syarat judul approved.
  *  - Bisa dipakai untuk MENGGANTI pembimbing yang sudah ada.
- *  - Setiap penetapan menerbitkan SK baru dan mengirim notifikasi langsung
- *    ke dosen pembimbing yang ditunjuk (link ke verify SK).
+ *  - Setiap penetapan menerbitkan SK + notifikasi ke dosen pembimbing.
+ *  - Nomor SK: Kaprodi boleh isi manual; kalau kosong, sistem auto-generate.
  */
 export async function POST(
   req: Request,
@@ -58,7 +57,6 @@ export async function POST(
   if (!tesis)
     return NextResponse.json({ message: "Tidak ditemukan" }, { status: 404 });
 
-  // Kaprodi hanya boleh mengatur untuk mahasiswa di prodinya.
   if (
     session.role === "KAPRODI" &&
     tesis.mahasiswa.prodiId &&
@@ -94,12 +92,30 @@ export async function POST(
       { status: 400 },
     );
 
-  // Generate nomor SK & sign document.
-  const yearStart = new Date(new Date().getFullYear(), 0, 1);
-  const count = await prisma.signedDocument.count({
-    where: { kind: "SK_PEMBIMBING", signedAt: { gte: yearStart } },
-  });
-  const nomor = generateLetterNumber(count + 1, "II.3.AU/SK.PPs");
+  // Nomor: pakai input Kaprodi kalau ada; kalau tidak, generate.
+  let nomor: string;
+  const manualNomor = parsed.nomor?.trim();
+  if (manualNomor) {
+    // Cek tabrakan dengan SK lain (uniqueness untuk SignedDocument.nomor not enforced;
+    // cek manual via skBimbinganNo di Tesis).
+    const collide = await prisma.tesis.findFirst({
+      where: { skBimbinganNo: manualNomor, NOT: { id: tesis.id } },
+      select: { id: true },
+    });
+    if (collide) {
+      return NextResponse.json(
+        { message: `Nomor SK "${manualNomor}" sudah dipakai SK lain` },
+        { status: 400 },
+      );
+    }
+    nomor = manualNomor;
+  } else {
+    const yearStart = new Date(new Date().getFullYear(), 0, 1);
+    const count = await prisma.signedDocument.count({
+      where: { kind: "SK_PEMBIMBING", signedAt: { gte: yearStart } },
+    });
+    nomor = generateLetterNumber(count + 1, "II.3.AU/SK.PPs");
+  }
 
   const doc = await signDocument({
     kind: "SK_PEMBIMBING",
@@ -118,8 +134,6 @@ export async function POST(
     signer,
   });
 
-  // Tentukan dosen yang sebelumnya menjadi pembimbing tapi sekarang dilepas,
-  // supaya kita bisa kirim notifikasi "Anda dilepas dari penugasan".
   const previousPembimbingIds = [
     tesis.pembimbing1Id,
     tesis.pembimbing2Id,
@@ -139,7 +153,6 @@ export async function POST(
       pembimbing2Id: parsed.pembimbing2Id || null,
       skBimbinganNo: nomor,
       skBimbinganDocId: doc.id,
-      // Hanya naikkan stage kalau masih di JUDUL.
       ...(tesis.stage === "JUDUL" ? { stage: "PROPOSAL" as const } : {}),
       timeline: {
         create: {
@@ -151,7 +164,6 @@ export async function POST(
     },
   });
 
-  const verifyUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/verify/${doc.code}`;
   const skBody = (peran: string) =>
     `Anda ditetapkan sebagai ${peran} untuk ${tesis.mahasiswa.name} (${tesis.mahasiswa.nimNip}). SK Nomor ${nomor}. Klik untuk lihat SK.`;
 
@@ -179,7 +191,6 @@ export async function POST(
             },
           ]
         : []),
-      // Notif untuk dosen yang dilepas (kalau ada).
       ...releasedIds.map((uid) => ({
         userId: uid,
         title: "Penugasan Pembimbing Dicabut",
@@ -197,6 +208,7 @@ export async function POST(
       entityId: id,
       metadata: {
         nomor,
+        nomorMode: manualNomor ? "manual" : "auto",
         pembimbing1Id: parsed.pembimbing1Id,
         pembimbing2Id: parsed.pembimbing2Id || null,
         previous: previousPembimbingIds,
@@ -204,6 +216,7 @@ export async function POST(
     },
   });
 
+  const verifyUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/verify/${doc.code}`;
   return NextResponse.json({
     ok: true,
     nomor,

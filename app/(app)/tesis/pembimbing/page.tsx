@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/card";
 import { Alert } from "@/components/ui/alert";
 import { AssignPembimbingPanel } from "./AssignPembimbingPanel";
+import { AssignPAPanel } from "./AssignPAPanel";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +20,6 @@ export default async function ManagePembimbingPage() {
   if (user.role !== "KAPRODI" && user.role !== "ADMIN")
     redirect("/dashboard");
 
-  // Kaprodi: filter ke prodinya. Admin: lihat semua.
   const where =
     user.role === "KAPRODI" && user.prodiId
       ? { mahasiswa: { prodiId: user.prodiId } }
@@ -28,7 +28,9 @@ export default async function ManagePembimbingPage() {
   const tesisList = await prisma.tesis.findMany({
     where,
     include: {
-      mahasiswa: { include: { prodi: true } },
+      mahasiswa: {
+        include: { prodi: true, mahasiswaProfile: true },
+      },
       pa: true,
       pembimbing1: true,
       pembimbing2: true,
@@ -59,18 +61,19 @@ export default async function ManagePembimbingPage() {
     <div className="max-w-5xl mx-auto space-y-4">
       <div>
         <h1 className="text-2xl font-bold text-slate-900">
-          Atur Pembimbing Tesis
+          Mahasiswa & Pembimbing
         </h1>
         <p className="text-sm text-slate-500">
-          Tetapkan atau ubah dosen pembimbing untuk setiap mahasiswa di prodi
-          Anda. Setiap penetapan akan menerbitkan SK Pembimbing dan otomatis
-          mengirim notifikasi ke dosen yang ditunjuk.
+          Lihat semua mahasiswa di prodi Anda. Tetapkan Pembimbing Akademik
+          (PA), serta Pembimbing 1 / 2 untuk tesis. Setiap penetapan
+          Pembimbing 1/2 menerbitkan SK + notifikasi otomatis ke dosen.
         </p>
       </div>
 
       {tesisList.length === 0 ? (
         <Alert variant="info">
-          Belum ada mahasiswa yang terdaftar tesis di prodi Anda.
+          Belum ada mahasiswa terdaftar di prodi Anda. Admin bisa menambah
+          lewat menu Kelola User atau bulk upload CSV.
         </Alert>
       ) : (
         <div className="space-y-3">
@@ -84,9 +87,15 @@ export default async function ManagePembimbingPage() {
                   <div className="flex-1 min-w-0">
                     <CardTitle>{t.mahasiswa.name}</CardTitle>
                     <CardDescription>
-                      {t.mahasiswa.nimNip}
+                      NIM {t.mahasiswa.nimNip}
                       {t.mahasiswa.prodi
                         ? ` · ${t.mahasiswa.prodi.name}`
+                        : ""}
+                      {t.mahasiswa.mahasiswaProfile?.angkatan
+                        ? ` · Angkatan ${t.mahasiswa.mahasiswaProfile.angkatan}`
+                        : ""}
+                      {t.mahasiswa.mahasiswaProfile?.semester
+                        ? ` · Smt ${t.mahasiswa.mahasiswaProfile.semester}`
                         : ""}
                     </CardDescription>
                   </div>
@@ -107,15 +116,19 @@ export default async function ManagePembimbingPage() {
                     )}
                   </div>
                 </CardHeader>
-                <CardBody className="space-y-2">
+                <CardBody className="space-y-4">
                   <div className="grid sm:grid-cols-2 gap-3 text-sm">
                     <div>
                       <p className="text-slate-500">Judul</p>
                       <p className="font-medium">{judul}</p>
                     </div>
                     <div>
-                      <p className="text-slate-500">PA</p>
-                      <p className="font-medium">{t.pa?.name || "-"}</p>
+                      <p className="text-slate-500">PA saat ini</p>
+                      <p className="font-medium">
+                        {t.pa?.name || (
+                          <span className="text-slate-400">— belum —</span>
+                        )}
+                      </p>
                     </div>
                     <div>
                       <p className="text-slate-500">Pembimbing 1</p>
@@ -134,16 +147,30 @@ export default async function ManagePembimbingPage() {
                       </p>
                     </div>
                   </div>
-                  <AssignPembimbingPanel
-                    tesisId={t.id}
-                    dosen={dosenList.map((d) => ({
-                      id: d.id,
-                      name: d.name,
-                    }))}
-                    initialP1={t.pembimbing1Id ?? ""}
-                    initialP2={t.pembimbing2Id ?? ""}
-                    hasExisting={hasP1}
-                  />
+
+                  <div className="rounded-md border border-slate-200 p-3 bg-slate-50">
+                    <AssignPAPanel
+                      tesisId={t.id}
+                      dosen={dosenList.map((d) => ({
+                        id: d.id,
+                        name: d.name,
+                      }))}
+                      initialPaId={t.paId ?? ""}
+                    />
+                  </div>
+
+                  <div className="rounded-md border border-slate-200 p-3">
+                    <AssignPembimbingPanel
+                      tesisId={t.id}
+                      dosen={dosenList.map((d) => ({
+                        id: d.id,
+                        name: d.name,
+                      }))}
+                      initialP1={t.pembimbing1Id ?? ""}
+                      initialP2={t.pembimbing2Id ?? ""}
+                      hasExisting={hasP1}
+                    />
+                  </div>
                 </CardBody>
               </Card>
             );

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Select, FormRow } from "@/components/ui/input";
+import { Input, Select, FormRow } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 
@@ -23,6 +23,7 @@ export function AssignPembimbingPanel({
   const [open, setOpen] = useState(false);
   const [p1, setP1] = useState(initialP1);
   const [p2, setP2] = useState(initialP2);
+  const [nomor, setNomor] = useState("");
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [okMsg, setOkMsg] = useState<string | null>(null);
@@ -47,6 +48,7 @@ export function AssignPembimbingPanel({
         body: JSON.stringify({
           pembimbing1Id: p1,
           pembimbing2Id: p2 || null,
+          nomor: nomor.trim() || null,
         }),
       });
       const text = await res.text();
@@ -126,6 +128,18 @@ export function AssignPembimbingPanel({
           </Select>
         </FormRow>
       </div>
+      <FormRow
+        label="Nomor SK (opsional)"
+        htmlFor={`nomor-${tesisId}`}
+        hint="Kosongkan untuk auto-generate. Contoh manual: 0123/II.3.AU/SK.PPs/V/2026"
+      >
+        <Input
+          id={`nomor-${tesisId}`}
+          value={nomor}
+          onChange={(e) => setNomor(e.target.value)}
+          placeholder="(kosong = otomatis)"
+        />
+      </FormRow>
       <div className="flex gap-2">
         <Button type="submit" disabled={loading}>
           {loading
