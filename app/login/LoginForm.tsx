@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Input, FormRow } from "@/components/ui/input";
+import { Input, PasswordInput, FormRow } from "@/components/ui/input";
 import { Alert } from "@/components/ui/alert";
 
 export function LoginForm({ scope }: { scope: "user" | "admin" }) {
@@ -92,10 +92,9 @@ export function LoginForm({ scope }: { scope: "user" | "admin" }) {
         />
       </FormRow>
       <FormRow label="Password" htmlFor="password" required>
-        <Input
+        <PasswordInput
           id="password"
           name="password"
-          type="password"
           autoComplete="current-password"
           required
           value={password}
