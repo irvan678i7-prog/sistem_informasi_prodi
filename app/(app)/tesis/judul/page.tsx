@@ -9,9 +9,11 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Alert } from "@/components/ui/alert";
-import { StatusBadge } from "@/components/ui/status-badge";
+import { JudulStatusBadge } from "@/components/ui/status-badge";
+import { getJudulComments } from "@/lib/judul";
 import { JudulForm } from "./JudulForm";
 import { JudulAction } from "./JudulAction";
+import { JudulComments } from "./JudulComments";
 
 export default async function PengajuanJudulPage() {
   const user = await getCurrentUser();
@@ -24,6 +26,8 @@ export default async function PengajuanJudulPage() {
       include: { pa: true },
     });
 
+    const comments = tesis ? await getJudulComments(tesis.id) : [];
+
     // List of available PA (dosen in same prodi)
     const dosenList = user.prodiId
       ? await prisma.user.findMany({
@@ -35,30 +39,47 @@ export default async function PengajuanJudulPage() {
         })
       : [];
 
+    // Editing terkunci setelah judul disetujui PA (VERIFIED) atau difinalisasi
+    // Kaprodi (APPROVED). Untuk menyunting lagi, reviewer harus meminta revisi
+    // sehingga status kembali ke DRAFT.
+    const locked =
+      tesis?.judulStatus === "VERIFIED" || tesis?.judulStatus === "APPROVED";
+
     return (
       <div className="max-w-3xl mx-auto space-y-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">
-            Pengajuan Judul Tesis
-          </h1>
-          <p className="text-sm text-slate-500">
-            Ajukan 2 judul kepada Pembimbing Akademik (PA). PA akan menyetujui
-            salah satu judul.
-          </p>
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">
+              Pengajuan Judul Tesis
+            </h1>
+            <p className="text-sm text-slate-500">
+              Ajukan 2 judul kepada Pembimbing Akademik (PA). PA menyetujui dulu,
+              lalu Kaprodi memfinalisasi.
+            </p>
+          </div>
+          {tesis && <JudulStatusBadge status={tesis.judulStatus} />}
         </div>
 
-        {tesis && tesis.judulStatus === "APPROVED" ? (
+        {locked ? (
           <Card>
             <CardBody className="space-y-2">
-              <Alert variant="success" title="Judul disetujui">
-                Judul tesis Anda telah disetujui PA. Lanjutkan ke tahap
-                penyusunan proposal.
-              </Alert>
+              {tesis?.judulStatus === "APPROVED" ? (
+                <Alert variant="info" title="Judul disetujui">
+                  Judul tesis Anda telah disetujui dan difinalisasi. Pengajuan
+                  ini terkunci dan tidak dapat diubah.
+                </Alert>
+              ) : (
+                <Alert variant="info" title="Disetujui PA — menunggu Kaprodi">
+                  Judul Anda telah disetujui PA (
+                  <strong>{tesis?.pa?.name || "-"}</strong>) dan diteruskan ke
+                  Kaprodi untuk finalisasi. Pengajuan terkunci selama proses ini.
+                </Alert>
+              )}
               <p className="text-sm">
-                <strong>Judul Final:</strong> {tesis.judulFinal}
+                <strong>Judul:</strong> {tesis?.judulFinal}
               </p>
               <p className="text-sm">
-                <strong>PA:</strong> {tesis.pa?.name}
+                <strong>PA:</strong> {tesis?.pa?.name || "-"}
               </p>
             </CardBody>
           </Card>
@@ -67,30 +88,20 @@ export default async function PengajuanJudulPage() {
             <CardHeader>
               <CardTitle>Formulir Pengajuan Judul</CardTitle>
               <CardDescription>
-                Isi dua opsi judul. Anda dapat melihat preview sebelum
-                mengirim.
+                Isi dua opsi judul. Anda dapat melihat preview sebelum mengirim.
               </CardDescription>
             </CardHeader>
             <CardBody>
-              {tesis?.judulStatus === "SUBMITTED" && (
-                <Alert variant="info" title="Menunggu PA">
-                  Pengajuan Anda telah dikirim. PA: {tesis.pa?.name || "-"}.
-                  Status:{" "}
-                  <span className="font-medium">
-                    <StatusBadge status={tesis.judulStatus} />
-                  </span>
-                </Alert>
-              )}
-              {tesis?.judulStatus === "VERIFIED" && (
-                <Alert variant="info" title="Menunggu Finalisasi Kaprodi">
-                  PA telah merekomendasikan judul:{" "}
-                  <strong>{tesis.judulFinal}</strong>. Sedang menunggu
-                  finalisasi oleh Kaprodi.
-                </Alert>
-              )}
               {tesis?.judulStatus === "REJECTED" && (
                 <Alert variant="error" title="Ditolak">
-                  Pengajuan Anda ditolak. Silakan ajukan ulang.
+                  Pengajuan Anda ditolak. Silakan periksa catatan di bawah dan
+                  ajukan ulang.
+                </Alert>
+              )}
+              {tesis?.judulStatus === "DRAFT" && (
+                <Alert variant="warning" title="Perlu Revisi">
+                  Reviewer meminta revisi. Perbaiki judul sesuai catatan di bawah
+                  lalu ajukan ulang.
                 </Alert>
               )}
               <JudulForm
@@ -113,6 +124,18 @@ export default async function PengajuanJudulPage() {
             </CardBody>
           </Card>
         )}
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Komentar & Catatan</CardTitle>
+            <CardDescription>
+              Riwayat komentar dan permintaan revisi dari PA / Kaprodi.
+            </CardDescription>
+          </CardHeader>
+          <CardBody>
+            <JudulComments comments={comments} />
+          </CardBody>
+        </Card>
       </div>
     );
   }
@@ -151,6 +174,19 @@ export default async function PengajuanJudulPage() {
           })
         : [];
 
+    // Comments untuk seluruh item yang ditampilkan, dipetakan per tesis.
+    const visibleIds = [
+      ...paItems.map((t) => t.id),
+      ...kaprodiItems.map((t) => t.id),
+    ];
+    const commentsByTesis = new Map(
+      await Promise.all(
+        visibleIds.map(
+          async (tid) => [tid, await getJudulComments(tid)] as const,
+        ),
+      ),
+    );
+
     return (
       <div className="max-w-4xl mx-auto space-y-6">
         <div>
@@ -164,9 +200,7 @@ export default async function PengajuanJudulPage() {
 
         {/* PA queue */}
         <section className="space-y-3">
-          <h2 className="text-base font-semibold text-slate-800">
-            Antrian PA
-          </h2>
+          <h2 className="text-base font-semibold text-slate-800">Antrian PA</h2>
           <p className="text-xs text-slate-500">
             Pengajuan yang menunggu rekomendasi Anda sebagai PA.
           </p>
@@ -183,9 +217,7 @@ export default async function PengajuanJudulPage() {
                   <CardTitle>{t.mahasiswa.name}</CardTitle>
                   <CardDescription>
                     {t.mahasiswa.nimNip}
-                    {t.mahasiswa.prodi
-                      ? ` · ${t.mahasiswa.prodi.name}`
-                      : ""}
+                    {t.mahasiswa.prodi ? ` · ${t.mahasiswa.prodi.name}` : ""}
                   </CardDescription>
                 </CardHeader>
                 <CardBody className="space-y-3">
@@ -198,6 +230,7 @@ export default async function PengajuanJudulPage() {
                     <p className="text-slate-900">{t.judul2 || "-"}</p>
                   </div>
                   <JudulAction tesisId={t.id} mode="pa" />
+                  <CommentsBlock comments={commentsByTesis.get(t.id) ?? []} />
                 </CardBody>
               </Card>
             ))
@@ -211,8 +244,7 @@ export default async function PengajuanJudulPage() {
               Antrian Finalisasi Kaprodi
             </h2>
             <p className="text-xs text-slate-500">
-              Judul yang sudah direkomendasikan PA, menunggu finalisasi
-              Kaprodi.
+              Judul yang sudah direkomendasikan PA, menunggu finalisasi Kaprodi.
             </p>
             {kaprodiItems.length === 0 ? (
               <Card>
@@ -227,9 +259,7 @@ export default async function PengajuanJudulPage() {
                     <CardTitle>{t.mahasiswa.name}</CardTitle>
                     <CardDescription>
                       {t.mahasiswa.nimNip}
-                      {t.mahasiswa.prodi
-                        ? ` · ${t.mahasiswa.prodi.name}`
-                        : ""}
+                      {t.mahasiswa.prodi ? ` · ${t.mahasiswa.prodi.name}` : ""}
                       {t.pa?.name ? ` · PA: ${t.pa.name}` : ""}
                     </CardDescription>
                   </CardHeader>
@@ -243,6 +273,7 @@ export default async function PengajuanJudulPage() {
                       </p>
                     </div>
                     <JudulAction tesisId={t.id} mode="kaprodi" />
+                    <CommentsBlock comments={commentsByTesis.get(t.id) ?? []} />
                   </CardBody>
                 </Card>
               ))
@@ -254,4 +285,20 @@ export default async function PengajuanJudulPage() {
   }
 
   redirect("/tesis");
+}
+
+function CommentsBlock({
+  comments,
+}: {
+  comments: Awaited<ReturnType<typeof getJudulComments>>;
+}) {
+  if (comments.length === 0) return null;
+  return (
+    <div className="pt-3 border-t border-slate-200">
+      <p className="text-xs font-medium text-slate-500 mb-2">
+        Komentar & Catatan
+      </p>
+      <JudulComments comments={comments} />
+    </div>
+  );
 }

@@ -16,70 +16,54 @@ export function JudulAction({
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
-  const [reason, setReason] = useState("");
+  // Komentar opsional yang menyertai persetujuan/finalisasi, dan wajib saat
+  // meminta revisi atau menolak.
+  const [comment, setComment] = useState("");
 
-  async function approve(which: 1 | 2) {
+  async function post(url: string, body?: unknown) {
     setErr(null);
-    setLoading("approve");
     try {
-      const res = await fetch(`/api/tesis/${tesisId}/judul/approve`, {
+      const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ which }),
+        body: JSON.stringify(body ?? {}),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setErr(data.message || "Gagal");
-        setLoading(null);
-        return;
+        return false;
       }
       router.refresh();
+      return true;
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Gagal";
-      setErr(msg);
+      setErr(e instanceof Error ? e.message : "Gagal");
+      return false;
     }
+  }
+
+  async function approve(which: 1 | 2) {
+    setLoading("approve");
+    await post(`/api/tesis/${tesisId}/judul/approve`, { which, comment });
     setLoading(null);
   }
   async function finalize() {
-    setErr(null);
     setLoading("finalize");
-    try {
-      const res = await fetch(`/api/tesis/${tesisId}/judul/finalize`, {
-        method: "POST",
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setErr(data.message || "Gagal");
-        setLoading(null);
-        return;
-      }
-      router.refresh();
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Gagal";
-      setErr(msg);
+    await post(`/api/tesis/${tesisId}/judul/finalize`, { comment });
+    setLoading(null);
+  }
+  async function requestRevision() {
+    if (comment.trim().length < 3) {
+      setErr("Catatan revisi wajib diisi.");
+      return;
     }
+    setLoading("revisi");
+    const ok = await post(`/api/tesis/${tesisId}/judul/revisi`, { comment });
+    if (ok) setComment("");
     setLoading(null);
   }
   async function reject() {
-    setErr(null);
     setLoading("reject");
-    try {
-      const res = await fetch(`/api/tesis/${tesisId}/judul/reject`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reason }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setErr(data.message || "Gagal");
-        setLoading(null);
-        return;
-      }
-      router.refresh();
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Gagal";
-      setErr(msg);
-    }
+    await post(`/api/tesis/${tesisId}/judul/reject`, { reason: comment });
     setLoading(null);
   }
 
@@ -104,16 +88,29 @@ export function JudulAction({
           </Button>
         </div>
       )}
-      <FormRow label="Alasan Penolakan (opsional)" htmlFor={`r-${tesisId}`}>
+      <FormRow
+        label="Komentar / Catatan"
+        htmlFor={`c-${tesisId}`}
+        hint="Opsional saat menyetujui. Wajib saat meminta revisi atau menolak."
+      >
         <Textarea
-          id={`r-${tesisId}`}
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
+          id={`c-${tesisId}`}
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
         />
       </FormRow>
-      <Button variant="danger" onClick={reject} disabled={!!loading}>
-        Tolak
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        <Button
+          variant="secondary"
+          onClick={requestRevision}
+          disabled={!!loading}
+        >
+          {loading === "revisi" ? "Memproses..." : "Minta Revisi"}
+        </Button>
+        <Button variant="danger" onClick={reject} disabled={!!loading}>
+          Tolak
+        </Button>
+      </div>
     </div>
   );
 }

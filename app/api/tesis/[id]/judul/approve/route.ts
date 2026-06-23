@@ -18,14 +18,19 @@ export async function POST(
     return NextResponse.json({ message: "Status tidak sesuai" }, { status: 400 });
 
   let which: number = 1;
+  let comment = "";
   try {
     const body = await req.json();
     which = body?.which === 2 ? 2 : 1;
+    comment = (body?.comment ?? "").toString().trim();
   } catch {
     // default
   }
 
   const judulFinal = which === 2 ? tesis.judul2 : tesis.judul1;
+  const note = comment
+    ? `Judul ke-${which} disetujui PA, menunggu finalisasi Kaprodi. Catatan: ${comment}`
+    : `Judul ke-${which} disetujui PA, menunggu finalisasi Kaprodi`;
 
   await prisma.tesis.update({
     where: { id },
@@ -36,7 +41,7 @@ export async function POST(
       timeline: {
         create: {
           stage: "JUDUL_PA_APPROVED",
-          note: `Judul ke-${which} disetujui PA, menunggu finalisasi Kaprodi`,
+          note,
           actorId: session.uid,
         },
       },
