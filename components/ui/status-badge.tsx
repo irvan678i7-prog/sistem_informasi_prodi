@@ -40,3 +40,20 @@ export function SidangBadge({ result }: { result: SidangResult }) {
 export function StageBadge({ stage }: { stage: TesisStage }) {
   return <span className="badge-blue">{STAGE_LABEL[stage]}</span>;
 }
+
+// Status khusus alur pengajuan judul. Berbeda dari StatusBadge umum: judul yang
+// sudah disetujui ditampilkan biru (bukan hijau) sesuai ketentuan alur judul.
+const JUDUL_STATUS_LABEL: Record<RequestStatus, { label: string; cls: string }> =
+  {
+    DRAFT: { label: "Perlu Revisi", cls: "badge-yellow" },
+    SUBMITTED: { label: "Menunggu PA", cls: "badge-blue" },
+    VERIFIED: { label: "Disetujui PA", cls: "badge-purple" },
+    APPROVED: { label: "Disetujui", cls: "badge-blue" },
+    REJECTED: { label: "Ditolak", cls: "badge-red" },
+    COMPLETED: { label: "Selesai", cls: "badge-blue" },
+  };
+
+export function JudulStatusBadge({ status }: { status: RequestStatus }) {
+  const s = JUDUL_STATUS_LABEL[status];
+  return <span className={s.cls}>{s.label}</span>;
+}

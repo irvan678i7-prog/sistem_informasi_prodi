@@ -23,6 +23,26 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: msg }, { status: 400 });
   }
 
+  // Lock editing once the judul has been approved (by PA or finalised by
+  // Kaprodi). Approved-tanpa-revisi tidak dapat diubah lagi; jika perlu diubah,
+  // reviewer harus meminta revisi terlebih dahulu (status kembali ke DRAFT).
+  const existing = await prisma.tesis.findUnique({
+    where: { mahasiswaId: session.uid },
+    select: { judulStatus: true },
+  });
+  if (
+    existing &&
+    (existing.judulStatus === "VERIFIED" || existing.judulStatus === "APPROVED")
+  ) {
+    return NextResponse.json(
+      {
+        message:
+          "Judul sudah disetujui dan tidak dapat diubah. Hubungi PA/Kaprodi untuk meminta revisi.",
+      },
+      { status: 409 },
+    );
+  }
+
   const tesis = await prisma.tesis.upsert({
     where: { mahasiswaId: session.uid },
     create: {

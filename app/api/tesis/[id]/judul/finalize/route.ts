@@ -7,7 +7,7 @@ import { getSession } from "@/lib/auth";
  * Set ke "APPROVED" dan naikkan stage ke PROPOSAL.
  */
 export async function POST(
-  _req: Request,
+  req: Request,
   ctx: { params: Promise<{ id: string }> },
 ) {
   const session = await getSession();
@@ -46,6 +46,14 @@ export async function POST(
     }
   }
 
+  let comment = "";
+  try {
+    const body = await req.json();
+    comment = (body?.comment ?? "").toString().trim();
+  } catch {
+    // default — finalize tanpa catatan
+  }
+
   await prisma.tesis.update({
     where: { id },
     data: {
@@ -54,7 +62,9 @@ export async function POST(
       timeline: {
         create: {
           stage: "JUDUL_FINALIZED",
-          note: "Judul difinalisasi Kaprodi",
+          note: comment
+            ? `Judul difinalisasi Kaprodi. Catatan: ${comment}`
+            : "Judul difinalisasi Kaprodi",
           actorId: session.uid,
         },
       },
