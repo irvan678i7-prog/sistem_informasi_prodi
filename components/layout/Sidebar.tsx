@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   Cog,
   FileText,
+  BookOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Role } from "@prisma/client";
@@ -42,6 +43,18 @@ const NAV: NavItem[] = [
     label: "Bimbingan",
     icon: ClipboardList,
     roles: ["DOSEN", "KAPRODI", "MAHASISWA"],
+  },
+  {
+    href: "/tesis/bimbingan-artikel",
+    label: "Bimbingan Artikel",
+    icon: BookOpen,
+    roles: ["MAHASISWA"],
+  },
+  {
+    href: "/bimbingan/artikel",
+    label: "Bimbingan Artikel",
+    icon: BookOpen,
+    roles: ["DOSEN", "KAPRODI"],
   },
   {
     href: "/tesis/pembimbing",

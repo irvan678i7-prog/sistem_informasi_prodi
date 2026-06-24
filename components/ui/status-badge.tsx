@@ -1,4 +1,9 @@
-import type { RequestStatus, SidangResult, TesisStage } from "@prisma/client";
+import type {
+  RequestStatus,
+  RevisiSeverity,
+  SidangResult,
+  TesisStage,
+} from "@prisma/client";
 
 const STATUS_LABEL: Record<RequestStatus, { label: string; cls: string }> = {
   DRAFT:     { label: "Draft",          cls: "badge-gray" },
@@ -55,5 +60,18 @@ const JUDUL_STATUS_LABEL: Record<RequestStatus, { label: string; cls: string }> 
 
 export function JudulStatusBadge({ status }: { status: RequestStatus }) {
   const s = JUDUL_STATUS_LABEL[status];
+  return <span className={s.cls}>{s.label}</span>;
+}
+
+// Skala revisi "baik–ringan" untuk bimbingan artikel per bagian.
+const SEVERITY_LABEL: Record<RevisiSeverity, { label: string; cls: string }> = {
+  BAIK: { label: "Baik", cls: "badge-green" },
+  REVISI_RINGAN: { label: "Revisi Ringan", cls: "badge-yellow" },
+  REVISI_SEDANG: { label: "Revisi Sedang", cls: "badge-purple" },
+  REVISI_BERAT: { label: "Revisi Berat", cls: "badge-red" },
+};
+
+export function SeverityBadge({ severity }: { severity: RevisiSeverity }) {
+  const s = SEVERITY_LABEL[severity];
   return <span className={s.cls}>{s.label}</span>;
 }

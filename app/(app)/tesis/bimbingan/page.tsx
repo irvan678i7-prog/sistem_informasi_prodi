@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -39,11 +40,17 @@ export default async function BimbinganPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Bimbingan Tesis</h1>
-        <p className="text-sm text-slate-500">
-          Catat setiap pertemuan bimbingan. Dosen akan memberi paraf elektronik.
-        </p>
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Bimbingan Tesis</h1>
+          <p className="text-sm text-slate-500">
+            Catat setiap pertemuan bimbingan. Dosen akan memberi paraf
+            elektronik.
+          </p>
+        </div>
+        <Link href="/tesis/bimbingan-artikel" className="btn-secondary">
+          Lembar Bimbingan Artikel
+        </Link>
       </div>
 
       {!tesis.pembimbing1Id ? (

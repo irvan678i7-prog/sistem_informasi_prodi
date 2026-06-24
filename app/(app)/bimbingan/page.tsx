@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -33,7 +34,12 @@ export default async function BimbinganDosenPage() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-4">
-      <h1 className="text-2xl font-bold text-slate-900">Bimbingan</h1>
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <h1 className="text-2xl font-bold text-slate-900">Bimbingan</h1>
+        <Link href="/bimbingan/artikel" className="btn-secondary">
+          Bimbingan Artikel
+        </Link>
+      </div>
 
       <Card>
         <CardHeader>

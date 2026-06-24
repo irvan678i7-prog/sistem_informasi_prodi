@@ -13,6 +13,7 @@ import {
   Upload,
   ClipboardList,
   FileText,
+  BookOpen,
 } from "lucide-react";
 import { StageBadge } from "@/components/ui/status-badge";
 import { formatDate, formatDateTime } from "@/lib/utils";
@@ -80,6 +81,12 @@ export function MahasiswaDashboard({
         >
           {tesis ? (
             <div className="grid sm:grid-cols-2 gap-3">
+              <UploadLink
+                href="/tesis/bimbingan-artikel"
+                icon={BookOpen}
+                title="Bimbingan Artikel"
+                desc="Unggah berkas per bagian (1–8)"
+              />
               <UploadLink
                 href="/tesis/bimbingan"
                 icon={ClipboardList}
