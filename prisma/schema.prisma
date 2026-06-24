@@ -56,6 +56,26 @@ enum SidangMode {
   ONLINE
 }
 
+// Bagian-bagian artikel/tesis yang dievaluasi pada lembar bimbingan artikel.
+enum BimbinganSection {
+  JUDUL
+  PENDAHULUAN
+  KAJIAN_PUSTAKA
+  METODOLOGI
+  INSTRUMEN
+  HASIL
+  KESIMPULAN
+  REFERENSI
+}
+
+// Skala revisi gaya "baik–ringan" untuk tiap bagian pada bimbingan artikel.
+enum RevisiSeverity {
+  BAIK
+  REVISI_RINGAN
+  REVISI_SEDANG
+  REVISI_BERAT
+}
+
 enum DocumentKind {
   SURAT
   SK_PEMBIMBING
@@ -217,8 +237,34 @@ model Tesis {
   revisi          TesisRevisi[]
   attachments     Attachment[]
   timeline        RequestTimeline[]
+  bimbinganArtikel BimbinganArtikel[]
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
+}
+
+// Lembar bimbingan artikel/tesis per bagian (1..8). Satu baris per bagian per
+// tesis. Mahasiswa mengunggah PDF per bagian; Pembimbing 1 & 2 masing-masing
+// mengisi catatan + skala revisi pada kolomnya sendiri.
+model BimbinganArtikel {
+  id            String           @id @default(cuid())
+  tesis         Tesis            @relation(fields: [tesisId], references: [id], onDelete: Cascade)
+  tesisId       String
+  section       BimbinganSection
+  // PDF yang diunggah mahasiswa untuk bagian ini (disimpan di Supabase Storage).
+  fileUrl       String?
+  fileName      String?
+  // Catatan & skala revisi Pembimbing 1.
+  p1Note        String?
+  p1Severity    RevisiSeverity?
+  p1ReviewedAt  DateTime?
+  // Catatan & skala revisi Pembimbing 2.
+  p2Note        String?
+  p2Severity    RevisiSeverity?
+  p2ReviewedAt  DateTime?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@unique([tesisId, section])
 }
 
 model SeminarProposal {
