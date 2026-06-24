@@ -17,14 +17,20 @@ export default async function BimbinganArtikelListPage() {
   if (!user) return null;
   if (user.role === "MAHASISWA") redirect("/tesis/bimbingan-artikel");
 
-  // Dosen/Kaprodi: theses where they are P1 or P2. Admin: all (scoped by prodi
-  // is unnecessary here — admin oversees everything).
+  // Scope per role:
+  // - ADMIN: semua tesis.
+  // - KAPRODI: semua tesis di prodinya (mengawasi, walau bukan pembimbing).
+  // - DOSEN: hanya tesis di mana ia Pembimbing 1 atau 2.
   const where =
     user.role === "ADMIN"
       ? {}
-      : {
-          OR: [{ pembimbing1Id: user.id }, { pembimbing2Id: user.id }],
-        };
+      : user.role === "KAPRODI"
+        ? user.prodiId
+          ? { mahasiswa: { prodiId: user.prodiId } }
+          : {}
+        : {
+            OR: [{ pembimbing1Id: user.id }, { pembimbing2Id: user.id }],
+          };
 
   const list = await prisma.tesis.findMany({
     where,

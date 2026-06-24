@@ -32,7 +32,14 @@ export default async function PembimbingWorksheetPage({
   let mode: WorksheetMode = "readonly";
   if (tesis.pembimbing1Id === user.id) mode = "p1";
   else if (tesis.pembimbing2Id === user.id) mode = "p2";
-  else if (user.role !== "KAPRODI" && user.role !== "ADMIN") {
+  else if (user.role === "ADMIN") {
+    mode = "readonly";
+  } else if (user.role === "KAPRODI") {
+    // Kaprodi hanya boleh melihat tesis di prodinya.
+    if (user.prodiId && tesis.mahasiswa.prodiId !== user.prodiId) {
+      redirect("/bimbingan/artikel");
+    }
+  } else {
     // Dosen yang bukan pembimbing tesis ini tidak berhak melihat.
     redirect("/bimbingan/artikel");
   }

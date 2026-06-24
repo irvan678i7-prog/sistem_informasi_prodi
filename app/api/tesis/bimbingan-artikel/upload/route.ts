@@ -53,7 +53,7 @@ export async function POST(req: Request) {
         userId,
         title: "Berkas Bimbingan Artikel Baru",
         body: `${session.name} mengunggah berkas bagian "${sectionLabel(section)}".`,
-        link: `/tesis/bimbingan-artikel/${tesisId}`,
+        link: `/bimbingan/artikel/${tesisId}`,
       })),
     });
   }
