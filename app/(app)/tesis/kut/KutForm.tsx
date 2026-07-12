@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { ArrowLeft, Eye, Send } from "lucide-react";
 import { formatDate } from "@/lib/utils";
+import { KUT_CHECKLIST_ITEMS } from "@/lib/kutChecklist";
+import { KutChecklistTable } from "@/components/KutChecklistTable";
 
 export function KutForm({
   tesisId,
@@ -28,6 +30,9 @@ export function KutForm({
   const [alatUji, setAlatUji] = useState("");
   const [tglUji, setTglUji] = useState("");
   const [note, setNote] = useState("");
+  const [checklist, setChecklist] = useState<boolean[]>(
+    KUT_CHECKLIST_ITEMS.map(() => false),
+  );
   const [submitting, setSubmitting] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -58,6 +63,7 @@ export function KutForm({
           alatUji,
           tglUji,
           note,
+          checklist,
         }),
       });
       const data = await res.json();
@@ -99,6 +105,10 @@ export function KutForm({
           <div className="meta-line"><div>Alat Uji</div><div>:</div><div>{alatUji || "-"}</div></div>
           <div className="meta-line"><div>Tanggal Uji</div><div>:</div><div>{tglUji ? formatDate(tglUji) : "-"}</div></div>
           {note && <div className="meta-line"><div>Catatan</div><div>:</div><div>{note}</div></div>}
+
+          <div className="mt-4">
+            <KutChecklistTable checklist={checklist} />
+          </div>
 
           <div className="ttd">
             <div className="col">
@@ -170,6 +180,35 @@ export function KutForm({
           onChange={(e) => setNote(e.target.value)}
         />
       </FormRow>
+      <fieldset className="rounded-lg border border-slate-200 p-4">
+        <legend className="text-sm font-semibold px-1">
+          Check List Berkas Syarat Ujian Tesis
+        </legend>
+        <p className="text-xs text-slate-500 mb-3">
+          Centang berkas yang sudah Anda siapkan (ADA). Yang tidak dicentang
+          akan ditandai TIDAK ADA pada formulir.
+        </p>
+        <ul className="space-y-2">
+          {KUT_CHECKLIST_ITEMS.map((item, i) => (
+            <li key={i} className="flex items-start gap-2">
+              <input
+                id={`cl-${i}`}
+                type="checkbox"
+                className="mt-0.5 h-4 w-4 shrink-0 accent-brand-600"
+                checked={checklist[i]}
+                onChange={(e) =>
+                  setChecklist((prev) =>
+                    prev.map((v, idx) => (idx === i ? e.target.checked : v)),
+                  )
+                }
+              />
+              <label htmlFor={`cl-${i}`} className="text-sm leading-snug">
+                {i + 1}. {item}
+              </label>
+            </li>
+          ))}
+        </ul>
+      </fieldset>
       <Button type="submit" variant="secondary">
         <Eye className="w-4 h-4 mr-1.5" /> Pratinjau
       </Button>

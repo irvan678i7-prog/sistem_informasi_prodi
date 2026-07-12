@@ -25,6 +25,11 @@ export function SectionUpload({
     const file = e.target.files?.[0];
     if (!file) return;
     setErr(null);
+    if (file.size > 2 * 1024 * 1024) {
+      setErr("Ukuran file melebihi batas maksimal 2MB");
+      if (inputRef.current) inputRef.current.value = "";
+      return;
+    }
     setBusy(true);
     try {
       const form = new FormData();
@@ -67,6 +72,7 @@ export function SectionUpload({
         <Upload className="w-3.5 h-3.5" />
         {busy ? "Mengunggah..." : hasFile ? "Ganti PDF" : "Unggah PDF"}
       </button>
+      <p className="text-[11px] text-slate-400">Maks. 2MB (PDF)</p>
       {err && <p className="text-xs text-red-600">{err}</p>}
     </div>
   );

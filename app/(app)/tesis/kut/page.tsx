@@ -12,6 +12,8 @@ import { Alert } from "@/components/ui/alert";
 import { KutForm } from "./KutForm";
 import { KutApprove } from "./KutApprove";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { KutChecklistTable } from "@/components/KutChecklistTable";
+import { parseKutChecklist } from "@/lib/kutChecklist";
 
 export default async function KutPage() {
   const user = await getCurrentUser();
@@ -61,6 +63,16 @@ export default async function KutPage() {
                   <strong>Catatan:</strong> {tesis.kut.notes}
                 </p>
               )}
+              <div className="pt-3 border-t border-slate-200">
+                <KutChecklistTable
+                  checklist={parseKutChecklist(tesis.kut.checklist)}
+                  mahasiswa={{
+                    name: user.name,
+                    nimNip: user.nimNip,
+                    prodi: user.prodi?.name ?? null,
+                  }}
+                />
+              </div>
             </CardBody>
           </Card>
         ) : (
@@ -151,6 +163,21 @@ export default async function KutPage() {
                 <strong>Kaprodi:</strong>{" "}
                 {k.kaprodiApproved ? "✓" : "—"}
               </p>
+              <details className="rounded-md border border-slate-200 p-3">
+                <summary className="cursor-pointer text-sm font-medium">
+                  Check List Berkas Syarat Ujian Tesis
+                </summary>
+                <div className="mt-3">
+                  <KutChecklistTable
+                    checklist={parseKutChecklist(k.checklist)}
+                    mahasiswa={{
+                      name: k.tesis.mahasiswa.name,
+                      nimNip: k.tesis.mahasiswa.nimNip,
+                      prodi: k.tesis.mahasiswa.prodi?.name ?? null,
+                    }}
+                  />
+                </div>
+              </details>
               <KutApprove
                 id={k.id}
                 role={user.role}

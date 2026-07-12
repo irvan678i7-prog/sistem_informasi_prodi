@@ -33,14 +33,17 @@ export function Worksheet({
   return (
     <Card>
       <CardBody className="p-0">
-        {/* Auto-filled identity header */}
-        <div className="px-5 py-4 border-b border-slate-200 grid sm:grid-cols-2 gap-x-6 gap-y-1 text-sm">
-          <HeaderRow k="Nama" v={header.nama} />
-          <HeaderRow k="NPM" v={header.npm} />
-          <HeaderRow k="Pembimbing 1" v={header.pembimbing1} />
-          <HeaderRow k="Pembimbing 2" v={header.pembimbing2} />
-          <div className="sm:col-span-2">
+        {/* Kepala kartu bimbingan (format resmi): Nama / NPM / Judul otomatis */}
+        <div className="px-5 py-4 border-b border-slate-200">
+          <h3 className="text-center text-sm font-bold uppercase mb-3">
+            Kartu Bimbingan Tesis
+          </h3>
+          <div className="space-y-1 text-sm">
+            <HeaderRow k="Nama" v={header.nama} />
+            <HeaderRow k="NPM" v={header.npm} />
             <HeaderRow k="Judul" v={header.judul} />
+            <HeaderRow k="Pembimbing 1" v={header.pembimbing1} />
+            <HeaderRow k="Pembimbing 2" v={header.pembimbing2} />
           </div>
         </div>
 
@@ -52,16 +55,16 @@ export function Worksheet({
                   No
                 </th>
                 <th className="px-3 py-2 font-medium text-slate-600 w-44">
-                  Bagian
-                </th>
-                <th className="px-3 py-2 font-medium text-slate-600 w-56">
-                  Berkas Mahasiswa
+                  Bimbingan ke
                 </th>
                 <th className="px-3 py-2 font-medium text-slate-600">
                   Pembimbing 1
                 </th>
                 <th className="px-3 py-2 font-medium text-slate-600">
                   Pembimbing 2
+                </th>
+                <th className="px-3 py-2 font-medium text-slate-600 w-56">
+                  Preview PDF
                 </th>
               </tr>
             </thead>
@@ -73,23 +76,7 @@ export function Worksheet({
                     {meta.label}
                   </td>
 
-                  {/* Student file + upload */}
-                  <td className="px-3 py-3 space-y-2">
-                    {row.fileUrl ? (
-                      <PdfPreview url={row.fileUrl} name={row.fileName} />
-                    ) : (
-                      <p className="text-xs text-slate-400">Belum ada berkas</p>
-                    )}
-                    {mode === "mahasiswa" && (
-                      <SectionUpload
-                        tesisId={tesisId}
-                        section={meta.section}
-                        hasFile={!!row.fileUrl}
-                      />
-                    )}
-                  </td>
-
-                  {/* Pembimbing 1 column */}
+                  {/* Kolom Pembimbing 1 */}
                   <td className="px-3 py-3">
                     {mode === "p1" ? (
                       <SectionReview
@@ -107,7 +94,7 @@ export function Worksheet({
                     )}
                   </td>
 
-                  {/* Pembimbing 2 column */}
+                  {/* Kolom Pembimbing 2 */}
                   <td className="px-3 py-3">
                     {mode === "p2" ? (
                       <SectionReview
@@ -121,6 +108,22 @@ export function Worksheet({
                         severity={row.p2Severity}
                         note={row.p2Note}
                         reviewedAt={row.p2ReviewedAt}
+                      />
+                    )}
+                  </td>
+
+                  {/* Berkas mahasiswa + preview PDF */}
+                  <td className="px-3 py-3 space-y-2">
+                    {row.fileUrl ? (
+                      <PdfPreview url={row.fileUrl} name={row.fileName} />
+                    ) : (
+                      <p className="text-xs text-slate-400">Belum ada berkas</p>
+                    )}
+                    {mode === "mahasiswa" && (
+                      <SectionUpload
+                        tesisId={tesisId}
+                        section={meta.section}
+                        hasFile={!!row.fileUrl}
                       />
                     )}
                   </td>
@@ -158,7 +161,11 @@ function Evaluation({
   return (
     <div className="space-y-1">
       {severity && <SeverityBadge severity={severity} />}
-      {note && <p className="text-xs text-slate-700 whitespace-pre-wrap">{note}</p>}
+      {note && (
+        <p className="font-handwriting text-lg leading-snug text-slate-800 whitespace-pre-wrap">
+          {note}
+        </p>
+      )}
       {reviewedAt && (
         <p className="text-[11px] text-slate-400">{formatDate(reviewedAt)}</p>
       )}

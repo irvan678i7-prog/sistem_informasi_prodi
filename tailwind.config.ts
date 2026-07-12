@@ -31,6 +31,7 @@ const config: Config = {
           "Arial",
           "sans-serif",
         ],
+        handwriting: ["var(--font-handwriting)", "cursive"],
       },
     },
   },

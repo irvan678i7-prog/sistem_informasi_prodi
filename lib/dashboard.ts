@@ -142,9 +142,13 @@ export async function getKaprodiDashboard(prodiId: string | null) {
       }),
       prisma.tesis.findMany({
         where: tesisWhere,
-        include: { mahasiswa: true },
+        include: {
+          mahasiswa: true,
+          pembimbing1: { select: { name: true } },
+          pembimbing2: { select: { name: true } },
+        },
         orderBy: { updatedAt: "desc" },
-        take: 6,
+        take: 10,
       }),
     ]);
 

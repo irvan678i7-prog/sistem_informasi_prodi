@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
-import { uploadBufferToSupabase } from "@/lib/storage";
+import {
+  uploadBufferToSupabase,
+  MAX_UPLOAD_BYTES,
+  MAX_UPLOAD_LABEL,
+} from "@/lib/storage";
 
 export async function POST(req: Request) {
   const session = await getSession();
@@ -15,6 +19,12 @@ export async function POST(req: Request) {
   const file = form.get("file");
   if (!tesisId || !(file instanceof File))
     return NextResponse.json({ message: "Body tidak valid" }, { status: 400 });
+
+  if (file.size > MAX_UPLOAD_BYTES)
+    return NextResponse.json(
+      { message: `Ukuran file melebihi batas maksimal ${MAX_UPLOAD_LABEL}` },
+      { status: 413 },
+    );
 
   const tesis = await prisma.tesis.findUnique({ where: { id: tesisId } });
   if (!tesis || tesis.mahasiswaId !== session.uid)
