@@ -9,6 +9,7 @@ const Body = z.object({
   alatUji: z.string().optional().nullable(),
   tglUji: z.string().optional().nullable(),
   note: z.string().optional().nullable(),
+  checklist: z.array(z.boolean()).max(20).optional(),
 });
 
 export async function POST(req: Request) {
@@ -41,6 +42,7 @@ export async function POST(req: Request) {
 
   const data = {
     notes: noteParts.length ? noteParts.join("; ") : null,
+    checklist: parsed.checklist ?? [],
     status: "SUBMITTED" as const,
   };
 

@@ -39,6 +39,14 @@ export default async function PengajuanJudulPage() {
         })
       : [];
 
+    // Nama Kaprodi prodi mahasiswa — untuk blok tanda tangan pada preview formulir.
+    const kaprodi = user.prodiId
+      ? await prisma.user.findFirst({
+          where: { role: "KAPRODI", prodiId: user.prodiId, isActive: true },
+          select: { name: true },
+        })
+      : null;
+
     // Editing terkunci setelah judul disetujui PA (VERIFIED) atau difinalisasi
     // Kaprodi (APPROVED). Untuk menyunting lagi, reviewer harus meminta revisi
     // sehingga status kembali ke DRAFT.
@@ -53,8 +61,8 @@ export default async function PengajuanJudulPage() {
               Pengajuan Judul Tesis
             </h1>
             <p className="text-sm text-slate-500">
-              Ajukan 2 judul kepada Pembimbing Akademik (PA). PA menyetujui dulu,
-              lalu Kaprodi memfinalisasi.
+              Ajukan 3 rencana judul kepada Dosen Pembimbing Akademik (PA). PA
+              menyetujui dulu, lalu Kaprodi memfinalisasi.
             </p>
           </div>
           {tesis && <JudulStatusBadge status={tesis.judulStatus} />}
@@ -88,7 +96,8 @@ export default async function PengajuanJudulPage() {
             <CardHeader>
               <CardTitle>Formulir Pengajuan Judul</CardTitle>
               <CardDescription>
-                Isi dua opsi judul. Anda dapat melihat preview sebelum mengirim.
+                Isi tiga rencana judul beserta jenis penelitiannya. Anda dapat
+                melihat preview format resmi sebelum mengirim.
               </CardDescription>
             </CardHeader>
             <CardBody>
@@ -111,15 +120,28 @@ export default async function PengajuanJudulPage() {
                     ? {
                         judul1: tesis.judul1 ?? "",
                         judul2: tesis.judul2 ?? "",
+                        judul3: tesis.judul3 ?? "",
+                        jenis1: tesis.jenis1 ?? "",
+                        jenis2: tesis.jenis2 ?? "",
+                        jenis3: tesis.jenis3 ?? "",
                         paId: tesis.paId ?? "",
                       }
-                    : { judul1: "", judul2: "", paId: "" }
+                    : {
+                        judul1: "",
+                        judul2: "",
+                        judul3: "",
+                        jenis1: "",
+                        jenis2: "",
+                        jenis3: "",
+                        paId: "",
+                      }
                 }
                 mahasiswa={{
                   name: user.name,
                   nimNip: user.nimNip,
                   prodi: user.prodi?.name ?? null,
                 }}
+                kaprodiName={kaprodi?.name ?? null}
               />
             </CardBody>
           </Card>
@@ -221,14 +243,21 @@ export default async function PengajuanJudulPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardBody className="space-y-3">
-                  <div>
-                    <p className="text-xs text-slate-500">Judul 1</p>
-                    <p className="text-slate-900">{t.judul1 || "-"}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500">Judul 2</p>
-                    <p className="text-slate-900">{t.judul2 || "-"}</p>
-                  </div>
+                  {(
+                    [
+                      { judul: t.judul1, jenis: t.jenis1 },
+                      { judul: t.judul2, jenis: t.jenis2 },
+                      { judul: t.judul3, jenis: t.jenis3 },
+                    ] as const
+                  ).map((row, i) => (
+                    <div key={i}>
+                      <p className="text-xs text-slate-500">
+                        Judul {i + 1}
+                        {row.jenis ? ` · ${row.jenis}` : ""}
+                      </p>
+                      <p className="text-slate-900">{row.judul || "-"}</p>
+                    </div>
+                  ))}
                   <JudulAction tesisId={t.id} mode="pa" />
                   <CommentsBlock comments={commentsByTesis.get(t.id) ?? []} />
                 </CardBody>

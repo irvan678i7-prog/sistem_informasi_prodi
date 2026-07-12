@@ -96,7 +96,7 @@ export default async function TesisIndexPage() {
               <StageLink
                 href="/tesis/judul"
                 title="Pengajuan Judul"
-                desc="Pengajuan 2 judul ke PA"
+                desc="Pengajuan 3 judul ke PA"
                 active={tesis.stage === "JUDUL"}
                 done={
                   tesis.stage !== "JUDUL" && tesis.judulStatus === "APPROVED"

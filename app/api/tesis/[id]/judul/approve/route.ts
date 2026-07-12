@@ -21,13 +21,14 @@ export async function POST(
   let comment = "";
   try {
     const body = await req.json();
-    which = body?.which === 2 ? 2 : 1;
+    which = body?.which === 2 ? 2 : body?.which === 3 ? 3 : 1;
     comment = (body?.comment ?? "").toString().trim();
   } catch {
     // default
   }
 
-  const judulFinal = which === 2 ? tesis.judul2 : tesis.judul1;
+  const judulFinal =
+    which === 3 ? tesis.judul3 : which === 2 ? tesis.judul2 : tesis.judul1;
   const note = comment
     ? `Judul ke-${which} disetujui PA, menunggu finalisasi Kaprodi. Catatan: ${comment}`
     : `Judul ke-${which} disetujui PA, menunggu finalisasi Kaprodi`;

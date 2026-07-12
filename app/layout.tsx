@@ -1,5 +1,12 @@
 import "./globals.css";
 import type { Metadata } from "next";
+import { Caveat } from "next/font/google";
+
+// Font handwriting untuk catatan pembimbing pada Kartu Bimbingan.
+const caveat = Caveat({
+  subsets: ["latin"],
+  variable: "--font-handwriting",
+});
 
 export const metadata: Metadata = {
   title: "Sistem Informasi Prodi - PPs UM Metro",
@@ -13,7 +20,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="id">
+    <html lang="id" className={caveat.variable}>
       <body className="min-h-screen antialiased">{children}</body>
     </html>
   );

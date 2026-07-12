@@ -41,7 +41,7 @@ export function JudulAction({
     }
   }
 
-  async function approve(which: 1 | 2) {
+  async function approve(which: 1 | 2 | 3) {
     setLoading("approve");
     await post(`/api/tesis/${tesisId}/judul/approve`, { which, comment });
     setLoading(null);
@@ -77,6 +77,9 @@ export function JudulAction({
           </Button>
           <Button onClick={() => approve(2)} disabled={!!loading}>
             Setujui Judul 2
+          </Button>
+          <Button onClick={() => approve(3)} disabled={!!loading}>
+            Setujui Judul 3
           </Button>
         </div>
       ) : (

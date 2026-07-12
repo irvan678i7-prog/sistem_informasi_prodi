@@ -1,5 +1,9 @@
 import { getSupabaseAdmin, STORAGE_BUCKET, ensureBucket } from "./supabase";
 
+/** Batas maksimal ukuran file upload mahasiswa (2 MB). */
+export const MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
+export const MAX_UPLOAD_LABEL = "2MB";
+
 /**
  * Upload a raw buffer to Supabase Storage and return its public URL.
  * Bucket is auto-created on first use (see ensureBucket()).
