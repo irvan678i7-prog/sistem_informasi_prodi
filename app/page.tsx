@@ -44,7 +44,7 @@ const FEATURES = [
 ];
 
 const STAGES = [
-  { n: "1", t: "Pengajuan Judul", d: "Ajukan 2 alternatif judul ke Dosen PA." },
+  { n: "1", t: "Pengajuan Judul", d: "Ajukan 3 rencana judul ke Dosen PA." },
   { n: "2", t: "Seminar Proposal", d: "SK Pembimbing terbit, daftar seminar." },
   { n: "3", t: "Bimbingan & KUT", d: "Catatan bimbingan & Kartu Ujian Tesis." },
   { n: "4", t: "Sidang Tesis", d: "Daftar sidang setelah KUT disetujui Kaprodi." },
