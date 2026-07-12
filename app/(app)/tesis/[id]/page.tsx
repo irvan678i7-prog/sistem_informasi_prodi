@@ -40,12 +40,28 @@ export default async function TesisDetailPage({
       timeline: {
         orderBy: { createdAt: "desc" },
         take: 15,
-        include: { actor: { select: { name: true } } },
       },
     },
   });
 
   if (!tesis) notFound();
+
+  // RequestTimeline hanya menyimpan actorId (tanpa relasi), jadi nama aktor
+  // diambil lewat query terpisah.
+  const actorIds = Array.from(
+    new Set(
+      tesis.timeline
+        .map((t) => t.actorId)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  );
+  const actors = actorIds.length
+    ? await prisma.user.findMany({
+        where: { id: { in: actorIds } },
+        select: { id: true, name: true },
+      })
+    : [];
+  const actorName = new Map(actors.map((a) => [a.id, a.name]));
 
   // Kontrol akses: mahasiswa pemilik, dosen terkait (PA/P1/P2),
   // kaprodi/admin prodi yang sama.
@@ -175,7 +191,9 @@ export default async function TesisDetailPage({
                         {t.note || t.stage}
                       </p>
                       <p className="text-xs text-slate-500">
-                        {t.actor?.name ? `${t.actor.name} · ` : ""}
+                        {t.actorId && actorName.get(t.actorId)
+                          ? `${actorName.get(t.actorId)} · `
+                          : ""}
                         {formatDateTime(t.createdAt)}
                       </p>
                     </li>
