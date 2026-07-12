@@ -75,8 +75,8 @@ export function KaprodiDashboard({
         </SectionCard>
 
         <SectionCard
-          title="Tesis Terbaru"
-          description="Pembaruan terakhir di prodi"
+          title="Mahasiswa Prodi"
+          description="Klik nama mahasiswa untuk menetapkan pembimbing"
           action={
             <Link href="/tesis" className="btn-ghost text-sm">
               Lihat semua
@@ -91,12 +91,21 @@ export function KaprodiDashboard({
               {recentTheses.map((t) => (
                 <li key={t.id} className="px-5 py-3 flex items-center gap-3">
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-slate-900 truncate">
+                    {/* Biodata mini: nama (link ke penetapan pembimbing) + NPM */}
+                    <Link
+                      href="/tesis/pembimbing"
+                      className="font-medium text-brand-700 hover:underline truncate block"
+                    >
                       {t.mahasiswa.name}
-                    </p>
+                    </Link>
                     <p className="text-xs text-slate-500 truncate">
+                      NPM {t.mahasiswa.nimNip} ·{" "}
                       {t.judulFinal || t.judul1 || "(judul belum ada)"} ·{" "}
                       {formatDateTime(t.updatedAt)}
+                    </p>
+                    <p className="text-xs text-slate-400 truncate">
+                      P1: {t.pembimbing1?.name ?? "—"} · P2:{" "}
+                      {t.pembimbing2?.name ?? "—"}
                     </p>
                   </div>
                   <StageBadge stage={t.stage} />

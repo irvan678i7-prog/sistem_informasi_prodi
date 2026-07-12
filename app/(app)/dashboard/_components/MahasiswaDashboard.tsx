@@ -77,7 +77,7 @@ export function MahasiswaDashboard({
         {/* Upload area */}
         <SectionCard
           title="Unggah Berkas"
-          description="Kirim dokumen sesuai tahap tesis Anda"
+          description="Kirim dokumen sesuai tahap tesis Anda (maks. 2MB per file, dapat dipreview)"
         >
           {tesis ? (
             <div className="grid sm:grid-cols-2 gap-3">
