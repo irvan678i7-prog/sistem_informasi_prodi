@@ -215,6 +215,11 @@ model Tesis {
   mahasiswaId     String        @unique
   judul1          String?
   judul2          String?
+  judul3          String?
+  // Jenis penelitian per judul: Kuantitatif / Kualitatif / Pengembangan / Studi literatur
+  jenis1          String?
+  jenis2          String?
+  jenis3          String?
   judulFinal      String?
   paId            String?
   pa              User?         @relation("TesisDosenPA", fields: [paId], references: [id])
@@ -306,6 +311,8 @@ model KUT {
   p2ApprovedAt      DateTime?
   kaprodiApproved   Boolean       @default(false)
   kaprodiApprovedAt DateTime?
+  // Checklist 14 berkas syarat ujian tesis: array boolean (ADA / TIDAK ADA)
+  checklist         Json?
   notes             String?
   status            RequestStatus @default(SUBMITTED)
   createdAt         DateTime      @default(now())
