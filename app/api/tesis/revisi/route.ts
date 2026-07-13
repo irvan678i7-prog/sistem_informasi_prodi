@@ -59,6 +59,36 @@ export async function POST(req: Request) {
       },
     },
   });
+  // Kirim notifikasi ke kedua pembimbing (dan Kaprodi prodi mahasiswa) agar
+  // revisi yang diunggah benar-benar sampai ke dosen.
+  const mahasiswa = await prisma.user.findUnique({
+    where: { id: session.uid },
+    select: { prodiId: true },
+  });
+  const kaprodi = mahasiswa?.prodiId
+    ? await prisma.user.findFirst({
+        where: { role: "KAPRODI", prodiId: mahasiswa.prodiId, isActive: true },
+        select: { id: true },
+      })
+    : null;
+  const recipients = Array.from(
+    new Set(
+      [tesis.pembimbing1Id, tesis.pembimbing2Id, kaprodi?.id].filter(
+        (v): v is string => !!v,
+      ),
+    ),
+  );
+  if (recipients.length) {
+    await prisma.notification.createMany({
+      data: recipients.map((userId) => ({
+        userId,
+        title: "Revisi Tesis Baru",
+        body: `${session.name} (${session.nimNip}) mengunggah berkas revisi tesis.`,
+        link: `/tesis/${tesisId}`,
+      })),
+    });
+  }
+
   await prisma.auditLog.create({
     data: {
       actorId: session.uid,

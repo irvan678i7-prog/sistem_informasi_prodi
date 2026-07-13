@@ -19,16 +19,18 @@ export default async function BimbinganArtikelPage() {
   if (!tesis) redirect("/tesis");
 
   const rows = await getBimbinganArtikel(tesis.id);
+  const trackLabel = tesis.track === "ARTIKEL" ? "Artikel" : "Tesis";
 
   return (
     <div className="max-w-6xl mx-auto space-y-4">
       <div>
         <h1 className="text-2xl font-bold text-slate-900">
-          Bimbingan Artikel / Tesis
+          Bimbingan {trackLabel}
         </h1>
         <p className="text-sm text-slate-500">
-          Unggah berkas tiap bagian (1–8). Pembimbing 1 &amp; 2 akan menilai dan
-          memberi catatan revisi per bagian.
+          Unggah berkas tiap bagian (1–8). Untuk mengirim revisi, cukup unggah
+          ulang berkas pada bagian yang sama — berkas akan otomatis bertanda
+          revisi dan pembimbing menerima notifikasi.
         </p>
       </div>
 
@@ -43,6 +45,7 @@ export default async function BimbinganArtikelPage() {
         tesisId={tesis.id}
         rows={rows}
         mode="mahasiswa"
+        track={tesis.track}
         header={{
           nama: user.name,
           npm: user.nimNip,

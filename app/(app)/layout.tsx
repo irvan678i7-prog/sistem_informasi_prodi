@@ -14,6 +14,14 @@ export default async function AppLayout({
   const unread = await prisma.notification.count({
     where: { userId: user.id, readAt: null },
   });
+  // Jalur bimbingan mahasiswa (TESIS/ARTIKEL) menentukan label menu bimbingan.
+  const tesis =
+    user.role === "MAHASISWA"
+      ? await prisma.tesis.findUnique({
+          where: { mahasiswaId: user.id },
+          select: { track: true },
+        })
+      : null;
   return (
     <div className="min-h-screen bg-slate-50">
       <Header
@@ -23,7 +31,7 @@ export default async function AppLayout({
         unreadCount={unread}
       />
       <div className="flex">
-        <Sidebar role={user.role} />
+        <Sidebar role={user.role} mahasiswaTrack={tesis?.track ?? null} />
         <main className="flex-1 px-4 lg:px-6 py-6 max-w-screen-2xl mx-auto w-full">
           {children}
         </main>

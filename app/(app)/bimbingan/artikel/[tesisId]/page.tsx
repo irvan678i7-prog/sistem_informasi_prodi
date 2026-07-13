@@ -56,7 +56,8 @@ export default async function PembimbingWorksheetPage({
       </Link>
       <div>
         <h1 className="text-2xl font-bold text-slate-900">
-          Bimbingan Artikel — {tesis.mahasiswa.name}
+          Bimbingan {tesis.track === "ARTIKEL" ? "Artikel" : "Tesis"} —{" "}
+          {tesis.mahasiswa.name}
         </h1>
         <p className="text-sm text-slate-500">
           {mode === "readonly"
@@ -76,6 +77,7 @@ export default async function PembimbingWorksheetPage({
         tesisId={tesis.id}
         rows={rows}
         mode={mode}
+        track={tesis.track}
         header={{
           nama: tesis.mahasiswa.name,
           npm: tesis.mahasiswa.nimNip,

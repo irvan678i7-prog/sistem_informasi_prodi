@@ -221,6 +221,9 @@ model Tesis {
   jenis2          String?
   jenis3          String?
   judulFinal      String?
+  // Jalur bimbingan yang dipilih mahasiswa saat mengajukan judul:
+  // "TESIS" atau "ARTIKEL". Menentukan kartu bimbingan yang ditampilkan.
+  track           String        @default("TESIS")
   paId            String?
   pa              User?         @relation("TesisDosenPA", fields: [paId], references: [id])
   pembimbingProposalId String?
@@ -258,6 +261,8 @@ model BimbinganArtikel {
   // PDF yang diunggah mahasiswa untuk bagian ini (disimpan di Supabase Storage).
   fileUrl       String?
   fileName      String?
+  // 0 = unggahan pertama; bertambah setiap mahasiswa mengunggah ulang (revisi).
+  revisiKe      Int              @default(0)
   // Catatan & skala revisi Pembimbing 1.
   p1Note        String?
   p1Severity    RevisiSeverity?

@@ -125,6 +125,7 @@ export default async function PengajuanJudulPage() {
                         jenis2: tesis.jenis2 ?? "",
                         jenis3: tesis.jenis3 ?? "",
                         paId: tesis.paId ?? "",
+                        track: tesis.track ?? "TESIS",
                       }
                     : {
                         judul1: "",
@@ -134,6 +135,7 @@ export default async function PengajuanJudulPage() {
                         jenis2: "",
                         jenis3: "",
                         paId: "",
+                        track: "TESIS",
                       }
                 }
                 mahasiswa={{
