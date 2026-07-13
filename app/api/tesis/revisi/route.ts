@@ -71,13 +71,13 @@ export async function POST(req: Request) {
         select: { id: true },
       })
     : null;
-  const recipients = [
-    ...new Set(
+  const recipients = Array.from(
+    new Set(
       [tesis.pembimbing1Id, tesis.pembimbing2Id, kaprodi?.id].filter(
         (v): v is string => !!v,
       ),
     ),
-  ];
+  );
   if (recipients.length) {
     await prisma.notification.createMany({
       data: recipients.map((userId) => ({
