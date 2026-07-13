@@ -14,11 +14,14 @@ import {
   ClipboardList,
   FileText,
   BookOpen,
+  CheckCircle2,
+  Circle,
 } from "lucide-react";
 import { StageBadge } from "@/components/ui/status-badge";
 import { formatDate, formatDateTime } from "@/lib/utils";
 import type { MahasiswaDashboardData } from "@/lib/dashboard";
 import { DashboardHero, StatCard, SectionCard, EmptyState } from "./shared";
+import { KUT_CHECKLIST_ITEMS, parseKutChecklist } from "@/lib/kutChecklist";
 import type { Role } from "@prisma/client";
 
 type User = {
@@ -36,6 +39,11 @@ export function MahasiswaDashboard({
   data: MahasiswaDashboardData;
 }) {
   const { tesis, unreadNotif, letterCount, pendingBimbingan } = data;
+
+  const checklist = parseKutChecklist(tesis?.kut?.checklist);
+  const checklistDone = checklist.filter(Boolean).length;
+  const checklistTotal = KUT_CHECKLIST_ITEMS.length;
+  const checklistPct = Math.round((checklistDone / checklistTotal) * 100);
 
   return (
     <div className="space-y-6">
@@ -186,6 +194,92 @@ export function MahasiswaDashboard({
           )}
         </SectionCard>
       </div>
+
+      {/* Checklist berkas syarat ujian tesis (format resmi, 14 item) */}
+      <SectionCard
+        title="Kelengkapan Berkas Syarat Ujian Tesis"
+        description="Daftar 14 berkas yang wajib disiapkan untuk mendaftar ujian tesis"
+        action={
+          <Link href="/tesis/kut" className="btn-ghost text-sm">
+            Kelola di KUT
+          </Link>
+        }
+      >
+        <div className="space-y-4">
+          {/* Ringkasan progres */}
+          <div className="flex items-center gap-4">
+            <div className="flex-1">
+              <div className="flex items-baseline justify-between mb-1.5">
+                <p className="text-sm font-medium text-slate-700">
+                  {checklistDone} dari {checklistTotal} berkas tersedia
+                </p>
+                <p className="text-sm font-semibold text-brand-700">
+                  {checklistPct}%
+                </p>
+              </div>
+              <div
+                className="h-2 rounded-full bg-slate-100 overflow-hidden"
+                role="progressbar"
+                aria-valuenow={checklistDone}
+                aria-valuemin={0}
+                aria-valuemax={checklistTotal}
+                aria-label="Progres kelengkapan berkas"
+              >
+                <div
+                  className="h-full rounded-full bg-brand-600 transition-all"
+                  style={{ width: `${checklistPct}%` }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Daftar berkas dua kolom */}
+          <ol className="grid md:grid-cols-2 gap-x-6 gap-y-1.5">
+            {KUT_CHECKLIST_ITEMS.map((item, i) => {
+              const ada = checklist[i];
+              return (
+                <li
+                  key={i}
+                  className="flex items-start gap-2.5 rounded-md px-2 py-1.5 hover:bg-slate-50"
+                >
+                  {ada ? (
+                    <CheckCircle2
+                      className="w-4 h-4 mt-0.5 shrink-0 text-brand-600"
+                      aria-hidden
+                    />
+                  ) : (
+                    <Circle
+                      className="w-4 h-4 mt-0.5 shrink-0 text-slate-300"
+                      aria-hidden
+                    />
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p
+                      className={
+                        ada
+                          ? "text-sm text-slate-700 leading-snug"
+                          : "text-sm text-slate-500 leading-snug"
+                      }
+                    >
+                      <span className="text-slate-400 mr-1">{i + 1}.</span>
+                      {item}
+                    </p>
+                  </div>
+                  <span
+                    className={
+                      ada
+                        ? "text-[11px] font-semibold uppercase tracking-wide text-brand-700 shrink-0 mt-0.5"
+                        : "text-[11px] font-medium uppercase tracking-wide text-slate-400 shrink-0 mt-0.5"
+                    }
+                  >
+                    {ada ? "Ada" : "Tidak ada"}
+                  </span>
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+      </SectionCard>
     </div>
   );
 }

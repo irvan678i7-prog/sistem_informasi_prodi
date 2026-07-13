@@ -8,9 +8,13 @@ const Patch = z.object({
   password: z.string().min(6).optional(),
   name: z.string().min(2).optional(),
   email: z.string().email().optional(),
+  nimNip: z.string().min(3).optional(),
+  role: z.enum(["ADMIN", "KAPRODI", "DOSEN", "MAHASISWA"]).optional(),
   prodiId: z.string().nullable().optional(),
   phone: z.string().nullable().optional(),
   address: z.string().nullable().optional(),
+  angkatan: z.number().int().nullable().optional(),
+  nidn: z.string().nullable().optional(),
 });
 
 export async function PATCH(
@@ -35,11 +39,21 @@ export async function PATCH(
   if (!target)
     return NextResponse.json({ message: "Tidak ditemukan" }, { status: 404 });
 
+  // Admin tidak boleh mengubah peran akunnya sendiri agar tidak
+  // kehilangan akses admin secara tidak sengaja.
+  if (parsed.role && id === session.uid && parsed.role !== "ADMIN")
+    return NextResponse.json(
+      { message: "Tidak dapat mengubah peran akun sendiri" },
+      { status: 400 },
+    );
+
   const data: {
     isActive?: boolean;
     hashedPassword?: string;
     name?: string;
     email?: string;
+    nimNip?: string;
+    role?: "ADMIN" | "KAPRODI" | "DOSEN" | "MAHASISWA";
     prodiId?: string | null;
     phone?: string | null;
     address?: string | null;
@@ -48,11 +62,37 @@ export async function PATCH(
   if (parsed.password) data.hashedPassword = await hashPassword(parsed.password);
   if (parsed.name) data.name = parsed.name;
   if (parsed.email) data.email = parsed.email.toLowerCase();
+  if (parsed.nimNip) data.nimNip = parsed.nimNip;
+  if (parsed.role) data.role = parsed.role;
   if (parsed.prodiId !== undefined) data.prodiId = parsed.prodiId;
   if (parsed.phone !== undefined) data.phone = parsed.phone;
   if (parsed.address !== undefined) data.address = parsed.address;
 
-  await prisma.user.update({ where: { id }, data });
+  try {
+    await prisma.user.update({ where: { id }, data });
+
+    // angkatan (mahasiswa) dan nidn (dosen) disimpan pada tabel profile,
+    // bukan langsung pada User.
+    if (parsed.angkatan !== undefined && parsed.angkatan !== null) {
+      await prisma.mahasiswaProfile.upsert({
+        where: { userId: id },
+        update: { angkatan: parsed.angkatan },
+        create: { userId: id, angkatan: parsed.angkatan },
+      });
+    }
+    if (parsed.nidn !== undefined) {
+      await prisma.dosenProfile.upsert({
+        where: { userId: id },
+        update: { nidn: parsed.nidn },
+        create: { userId: id, nidn: parsed.nidn },
+      });
+    }
+  } catch {
+    return NextResponse.json(
+      { message: "Gagal menyimpan. NIM/NIDN atau email mungkin sudah dipakai." },
+      { status: 400 },
+    );
+  }
 
   await prisma.auditLog.create({
     data: {

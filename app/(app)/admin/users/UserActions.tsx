@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
@@ -61,6 +62,12 @@ export function UserActions({
 
   return (
     <div className="flex gap-2 justify-end">
+      <Link
+        href={`/admin/users/${id}/edit`}
+        className="inline-flex items-center rounded-md px-2.5 py-1.5 text-sm font-medium text-brand-700 hover:bg-brand-50"
+      >
+        Edit
+      </Link>
       <Button
         size="sm"
         variant="ghost"
