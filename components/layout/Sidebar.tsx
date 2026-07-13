@@ -40,19 +40,21 @@ const NAV: NavItem[] = [
   },
   {
     href: "/bimbingan",
-    label: "Bimbingan",
+    label: "Jadwal Bimbingan",
     icon: ClipboardList,
     roles: ["DOSEN", "KAPRODI", "MAHASISWA"],
   },
+  // Menu kartu bimbingan mahasiswa: labelnya mengikuti jalur yang dipilih
+  // saat mengajukan judul (Bimbingan Tesis atau Bimbingan Artikel).
   {
     href: "/tesis/bimbingan-artikel",
-    label: "Bimbingan Artikel",
+    label: "Bimbingan Tesis",
     icon: BookOpen,
     roles: ["MAHASISWA"],
   },
   {
     href: "/bimbingan/artikel",
-    label: "Bimbingan Artikel",
+    label: "Kartu Bimbingan",
     icon: BookOpen,
     roles: ["DOSEN", "KAPRODI"],
   },
@@ -94,9 +96,22 @@ const NAV: NavItem[] = [
   },
 ];
 
-export function Sidebar({ role }: { role: Role }) {
+export function Sidebar({
+  role,
+  mahasiswaTrack,
+}: {
+  role: Role;
+  mahasiswaTrack?: string | null;
+}) {
   const pathname = usePathname() ?? "";
-  const items = NAV.filter((n) => !n.roles || n.roles.includes(role));
+  const items = NAV.filter((n) => !n.roles || n.roles.includes(role)).map(
+    (n) => {
+      // Label kartu bimbingan mahasiswa mengikuti jalur pilihan (tesis/artikel).
+      if (n.href === "/tesis/bimbingan-artikel" && mahasiswaTrack === "ARTIKEL")
+        return { ...n, label: "Bimbingan Artikel" };
+      return n;
+    },
+  );
 
   return (
     <aside className="w-64 shrink-0 border-r border-slate-200 bg-white min-h-[calc(100vh-56px)] sticky top-14">
