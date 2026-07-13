@@ -18,6 +18,7 @@ export function Worksheet({
   rows,
   header,
   mode,
+  track = "TESIS",
 }: {
   tesisId: string;
   rows: BimbinganArtikelRows;
@@ -29,6 +30,7 @@ export function Worksheet({
     pembimbing2: string;
   };
   mode: WorksheetMode;
+  track?: string;
 }) {
   return (
     <Card>
@@ -36,7 +38,9 @@ export function Worksheet({
         {/* Kepala kartu bimbingan (format resmi): Nama / NPM / Judul otomatis */}
         <div className="px-5 py-4 border-b border-slate-200">
           <h3 className="text-center text-sm font-bold uppercase mb-3">
-            Kartu Bimbingan Tesis
+            {track === "ARTIKEL"
+              ? "Kartu Bimbingan Artikel"
+              : "Kartu Bimbingan Tesis"}
           </h3>
           <div className="space-y-1 text-sm">
             <HeaderRow k="Nama" v={header.nama} />
@@ -115,7 +119,14 @@ export function Worksheet({
                   {/* Berkas mahasiswa + preview PDF */}
                   <td className="px-3 py-3 space-y-2">
                     {row.fileUrl ? (
-                      <PdfPreview url={row.fileUrl} name={row.fileName} />
+                      <div className="space-y-1">
+                        {row.revisiKe > 0 && (
+                          <span className="inline-block rounded bg-amber-100 text-amber-800 text-[11px] font-semibold px-1.5 py-0.5">
+                            Revisi ke-{row.revisiKe}
+                          </span>
+                        )}
+                        <PdfPreview url={row.fileUrl} name={row.fileName} />
+                      </div>
                     ) : (
                       <p className="text-xs text-slate-400">Belum ada berkas</p>
                     )}

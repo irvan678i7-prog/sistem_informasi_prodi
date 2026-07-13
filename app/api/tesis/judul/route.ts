@@ -11,6 +11,7 @@ const Body = z.object({
   jenis2: z.string().min(1),
   jenis3: z.string().min(1),
   paId: z.string().min(1),
+  track: z.enum(["TESIS", "ARTIKEL"]).default("TESIS"),
 });
 
 export async function POST(req: Request) {
@@ -58,6 +59,7 @@ export async function POST(req: Request) {
       jenis2: parsed.jenis2,
       jenis3: parsed.jenis3,
       paId: parsed.paId,
+      track: parsed.track,
       stage: "JUDUL",
       judulStatus: "SUBMITTED",
       timeline: {
@@ -76,6 +78,7 @@ export async function POST(req: Request) {
       jenis2: parsed.jenis2,
       jenis3: parsed.jenis3,
       paId: parsed.paId,
+      track: parsed.track,
       judulStatus: "SUBMITTED",
       timeline: {
         create: {

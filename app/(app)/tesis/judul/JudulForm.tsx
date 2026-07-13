@@ -27,6 +27,7 @@ export function JudulForm({
     jenis2: string;
     jenis3: string;
     paId: string;
+    track: string;
   };
   mahasiswa: { name: string; nimNip: string; prodi: string | null };
   kaprodiName?: string | null;
@@ -39,6 +40,7 @@ export function JudulForm({
     { judul: initial.judul3, jenis: initial.jenis3 },
   ]);
   const [paId, setPaId] = useState(initial.paId);
+  const [track, setTrack] = useState(initial.track || "TESIS");
   const [submitting, setSubmitting] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -80,6 +82,7 @@ export function JudulForm({
           jenis2: entries[1].jenis,
           jenis3: entries[2].jenis,
           paId,
+          track,
         }),
       });
       const data = await res.json();
@@ -126,6 +129,11 @@ export function JudulForm({
               <span>Program Studi</span>
               <span>:</span>
               <span>{mahasiswa.prodi || "-"}</span>
+            </div>
+            <div className="grid grid-cols-[110px_10px_1fr]">
+              <span>Jalur Bimbingan</span>
+              <span>:</span>
+              <span>{track === "ARTIKEL" ? "Artikel" : "Tesis"}</span>
             </div>
           </div>
           <table className="w-full border-collapse text-sm mb-3 [&_th]:border [&_th]:border-slate-800 [&_th]:p-1.5 [&_td]:border [&_td]:border-slate-800 [&_td]:p-1.5 [&_td]:align-top">
@@ -249,6 +257,35 @@ export function JudulForm({
           </FormRow>
         </div>
       ))}
+      <fieldset className="rounded-lg border border-slate-200 p-4">
+        <legend className="text-sm font-semibold px-1">
+          Jalur Bimbingan <span className="text-red-600">*</span>
+        </legend>
+        <p className="text-xs text-slate-500 mb-3">
+          Pilihan ini menentukan kartu bimbingan yang akan Anda gunakan.
+        </p>
+        <div className="flex flex-wrap gap-4">
+          {[
+            { value: "TESIS", label: "Bimbingan Tesis" },
+            { value: "ARTIKEL", label: "Bimbingan Artikel" },
+          ].map((opt) => (
+            <label
+              key={opt.value}
+              className="flex items-center gap-2 text-sm cursor-pointer"
+            >
+              <input
+                type="radio"
+                name="track"
+                value={opt.value}
+                checked={track === opt.value}
+                onChange={() => setTrack(opt.value)}
+                className="h-4 w-4 accent-brand-600"
+              />
+              {opt.label}
+            </label>
+          ))}
+        </div>
+      </fieldset>
       <FormRow label="Dosen Pembimbing Akademik" htmlFor="paId" required>
         <Select id="paId" value={paId} onChange={(e) => setPaId(e.target.value)}>
           <option value="">— pilih Dosen PA —</option>

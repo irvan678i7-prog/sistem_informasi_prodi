@@ -46,14 +46,24 @@ export async function POST(req: Request) {
     file.type || "application/pdf",
   );
 
-  // Satu baris per (tesis, section) — upsert agar unggah ulang mengganti berkas.
+  // Satu baris per (tesis, section) — upsert agar unggah ulang mengganti
+  // berkas. Jika sebelumnya sudah ada berkas, unggahan baru dihitung sebagai
+  // revisi (revisiKe bertambah) sehingga tampil bertanda "Revisi ke-N".
+  const existing = await prisma.bimbinganArtikel.findUnique({
+    where: { tesisId_section: { tesisId, section } },
+    select: { fileUrl: true, revisiKe: true },
+  });
+  const isRevisi = !!existing?.fileUrl;
+  const revisiKe = isRevisi ? (existing?.revisiKe ?? 0) + 1 : 0;
+
   await prisma.bimbinganArtikel.upsert({
     where: { tesisId_section: { tesisId, section } },
     create: { tesisId, section, fileUrl: url, fileName: file.name },
-    update: { fileUrl: url, fileName: file.name },
+    update: { fileUrl: url, fileName: file.name, revisiKe },
   });
 
-  // Beritahu kedua pembimbing bahwa ada berkas baru untuk ditinjau.
+  // Beritahu kedua pembimbing bahwa ada berkas baru/revisi untuk ditinjau.
+  const trackLabel = tesis.track === "ARTIKEL" ? "Artikel" : "Tesis";
   const recipients = [tesis.pembimbing1Id, tesis.pembimbing2Id].filter(
     (v): v is string => !!v,
   );
@@ -61,8 +71,12 @@ export async function POST(req: Request) {
     await prisma.notification.createMany({
       data: recipients.map((userId) => ({
         userId,
-        title: "Berkas Bimbingan Artikel Baru",
-        body: `${session.name} mengunggah berkas bagian "${sectionLabel(section)}".`,
+        title: isRevisi
+          ? `Revisi Bimbingan ${trackLabel}`
+          : `Berkas Bimbingan ${trackLabel} Baru`,
+        body: isRevisi
+          ? `${session.name} mengunggah revisi ke-${revisiKe} untuk bagian "${sectionLabel(section)}".`
+          : `${session.name} mengunggah berkas bagian "${sectionLabel(section)}".`,
         link: `/bimbingan/artikel/${tesisId}`,
       })),
     });
