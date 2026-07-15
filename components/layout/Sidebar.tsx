@@ -38,12 +38,6 @@ const NAV: NavItem[] = [
     icon: GraduationCap,
     roles: ["MAHASISWA", "DOSEN", "KAPRODI"],
   },
-  {
-    href: "/bimbingan",
-    label: "Jadwal Bimbingan",
-    icon: ClipboardList,
-    roles: ["DOSEN", "KAPRODI", "MAHASISWA"],
-  },
   // Menu kartu bimbingan mahasiswa: labelnya mengikuti jalur yang dipilih
   // saat mengajukan judul (Bimbingan Tesis atau Bimbingan Artikel).
   {
