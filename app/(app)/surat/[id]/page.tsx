@@ -15,6 +15,7 @@ import {
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatDateTime } from "@/lib/utils";
 import { LetterActions } from "./LetterActions";
+import { CetakSuratButton } from "./CetakSuratButton";
 
 export default async function SuratDetailPage({
   params,
@@ -77,7 +78,7 @@ export default async function SuratDetailPage({
 
   return (
     <div className="max-w-6xl mx-auto space-y-4">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
+      <div className="flex items-start justify-between gap-4 flex-wrap print:hidden">
         <div>
           <p className="text-sm text-slate-500">
             <Link href="/surat" className="hover:underline">
@@ -92,13 +93,16 @@ export default async function SuratDetailPage({
             {letter.mahasiswa.name} ({letter.mahasiswa.nimNip})
           </p>
         </div>
-        <StatusBadge status={letter.status} />
+        <div className="flex items-center gap-3">
+          <StatusBadge status={letter.status} />
+          <CetakSuratButton />
+        </div>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-4">
+      <div className="grid lg:grid-cols-3 gap-4 print:block">
         <div className="lg:col-span-2 space-y-4">
-          <Card>
-            <CardHeader>
+          <Card className="print:border-0 print:shadow-none">
+            <CardHeader className="print:hidden">
               <CardTitle>Pratinjau Surat</CardTitle>
               <CardDescription>
                 {letter.signedDoc
@@ -151,7 +155,7 @@ export default async function SuratDetailPage({
           </Card>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-4 print:hidden">
           {canAct && (
             <Card>
               <CardHeader>

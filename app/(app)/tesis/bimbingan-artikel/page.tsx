@@ -4,8 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { Alert } from "@/components/ui/alert";
 import { getBimbinganArtikel } from "@/lib/bimbinganArtikel";
 import { Worksheet } from "./Worksheet";
-import { KartuCetak } from "./KartuCetak";
-import { CetakButton } from "./CetakButton";
+import { KartuPrint } from "./KartuPrint";
 
 // Mahasiswa view of the bimbingan artikel worksheet. Non-mahasiswa are routed
 // to the pembimbing list at /bimbingan/artikel.
@@ -43,8 +42,8 @@ export default async function BimbinganArtikelPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-4">
-      <div className="flex flex-wrap items-start justify-between gap-3 print:hidden">
-        <div>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="print:hidden">
           <h1 className="text-2xl font-bold text-slate-900">
             Bimbingan {trackLabel}
           </h1>
@@ -54,7 +53,8 @@ export default async function BimbinganArtikelPage() {
             bertanda revisi dan pembimbing menerima notifikasi.
           </p>
         </div>
-        <CetakButton />
+        {/* KartuPrint berisi tombol (print:hidden) + kartu versi cetak */}
+        <KartuPrint track={tesis.track} header={header} rows={rows} />
       </div>
 
       {!tesis.pembimbing1Id && (
@@ -73,9 +73,6 @@ export default async function BimbinganArtikelPage() {
           header={header}
         />
       </div>
-
-      {/* Hanya tampil saat mencetak (format kartu resmi) */}
-      <KartuCetak track={tesis.track} header={header} rows={rows} />
     </div>
   );
 }
