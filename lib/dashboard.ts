@@ -46,9 +46,11 @@ export async function getMahasiswaDashboard(userId: string) {
     prisma.tesis.findUnique({
       where: { mahasiswaId: userId },
       include: {
-        pembimbing1: true,
-        pembimbing2: true,
-        pa: true,
+        // select nama saja — menghindari membawa seluruh kolom User
+        // (termasuk hashedPassword) sehingga query lebih ringan.
+        pembimbing1: { select: { name: true } },
+        pembimbing2: { select: { name: true } },
+        pa: { select: { name: true } },
         sidang: true,
         kut: true,
         seminars: { orderBy: { createdAt: "desc" }, take: 1 },
@@ -102,7 +104,9 @@ export async function getDosenDashboard(userId: string) {
       }),
       prisma.tesis.findMany({
         where: bimbinganWhere,
-        include: { mahasiswa: true },
+        include: {
+          mahasiswa: { select: { id: true, name: true, nimNip: true } },
+        },
         orderBy: { updatedAt: "desc" },
         take: 6,
       }),
@@ -143,7 +147,7 @@ export async function getKaprodiDashboard(prodiId: string | null) {
       prisma.tesis.findMany({
         where: tesisWhere,
         include: {
-          mahasiswa: true,
+          mahasiswa: { select: { id: true, name: true, nimNip: true } },
           pembimbing1: { select: { name: true } },
           pembimbing2: { select: { name: true } },
         },
