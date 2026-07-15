@@ -6,8 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { Alert } from "@/components/ui/alert";
 import { getBimbinganArtikel } from "@/lib/bimbinganArtikel";
 import { Worksheet, type WorksheetMode } from "../../../tesis/bimbingan-artikel/Worksheet";
-import { KartuCetak } from "../../../tesis/bimbingan-artikel/KartuCetak";
-import { CetakButton } from "../../../tesis/bimbingan-artikel/CetakButton";
+import { KartuPrint } from "../../../tesis/bimbingan-artikel/KartuPrint";
 
 export default async function PembimbingWorksheetPage({
   params,
@@ -58,28 +57,31 @@ export default async function PembimbingWorksheetPage({
 
   return (
     <div className="max-w-6xl mx-auto space-y-4">
-      <div className="print:hidden space-y-4">
+      <div className="print:hidden">
         <Link
           href="/bimbingan/artikel"
           className="inline-flex items-center gap-1 text-sm text-slate-600 hover:text-slate-900"
         >
           <ArrowLeft className="w-4 h-4" /> Kembali
         </Link>
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">
-              Bimbingan {tesis.track === "ARTIKEL" ? "Artikel" : "Tesis"} —{" "}
-              {tesis.mahasiswa.name}
-            </h1>
-            <p className="text-sm text-slate-500">
-              {mode === "readonly"
-                ? "Mode lihat: Anda bukan pembimbing tesis ini."
-                : `Anda menilai sebagai Pembimbing ${mode === "p1" ? "1" : "2"}.`}
-            </p>
-          </div>
-          <CetakButton />
+      </div>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="print:hidden">
+          <h1 className="text-2xl font-bold text-slate-900">
+            Bimbingan {tesis.track === "ARTIKEL" ? "Artikel" : "Tesis"} —{" "}
+            {tesis.mahasiswa.name}
+          </h1>
+          <p className="text-sm text-slate-500">
+            {mode === "readonly"
+              ? "Mode lihat: Anda bukan pembimbing tesis ini."
+              : `Anda menilai sebagai Pembimbing ${mode === "p1" ? "1" : "2"}.`}
+          </p>
         </div>
+        {/* KartuPrint berisi tombol (print:hidden) + kartu versi cetak */}
+        <KartuPrint track={tesis.track} header={header} rows={rows} />
+      </div>
 
+      <div className="print:hidden space-y-4">
         {mode === "readonly" && (
           <Alert variant="info">
             Anda dapat melihat berkas dan evaluasi, tetapi tidak dapat
@@ -95,9 +97,6 @@ export default async function PembimbingWorksheetPage({
           header={header}
         />
       </div>
-
-      {/* Hanya tampil saat mencetak (format kartu resmi) */}
-      <KartuCetak track={tesis.track} header={header} rows={rows} />
     </div>
   );
 }
