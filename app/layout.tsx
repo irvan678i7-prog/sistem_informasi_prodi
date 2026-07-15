@@ -1,6 +1,13 @@
 import "./globals.css";
 import type { Metadata } from "next";
-import { Caveat } from "next/font/google";
+import { Caveat, Poppins } from "next/font/google";
+
+// Font utama mengikuti web resmi UM Metro (Poppins), dibatasi 3 bobot agar ringan.
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["400", "600", "700"],
+  variable: "--font-sans",
+});
 
 // Font handwriting untuk catatan pembimbing pada Kartu Bimbingan.
 const caveat = Caveat({
@@ -20,8 +27,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="id" className={caveat.variable}>
-      <body className="min-h-screen antialiased">{children}</body>
+    <html
+      lang="id"
+      className={`${poppins.variable} ${caveat.variable} bg-background`}
+    >
+      <body className="min-h-screen antialiased font-sans">{children}</body>
     </html>
   );
 }

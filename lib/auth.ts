@@ -1,3 +1,4 @@
+import { cache } from "react";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
@@ -69,7 +70,9 @@ export async function getSession(): Promise<SessionPayload | null> {
   return verifySession(token);
 }
 
-export async function getCurrentUser() {
+// Dibungkus React cache() agar hanya 1 query per request meskipun dipanggil
+// dari layout DAN halaman sekaligus — menghemat query database di tiap navigasi.
+export const getCurrentUser = cache(async () => {
   const session = await getSession();
   if (!session) return null;
   return prisma.user.findUnique({
@@ -80,7 +83,7 @@ export async function getCurrentUser() {
       dosenProfile: true,
     },
   });
-}
+});
 
 export async function requireRole(...allowed: Role[]) {
   const session = await getSession();

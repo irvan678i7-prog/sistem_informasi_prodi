@@ -11,27 +11,33 @@ export default async function AppLayout({
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  const unread = await prisma.notification.count({
-    where: { userId: user.id, readAt: null },
-  });
-  // Jalur bimbingan mahasiswa (TESIS/ARTIKEL) menentukan label menu bimbingan.
-  const tesis =
+  // Dua query dijalankan paralel agar navigasi antarhalaman lebih cepat.
+  const [unread, tesis] = await Promise.all([
+    prisma.notification.count({
+      where: { userId: user.id, readAt: null },
+    }),
+    // Jalur bimbingan mahasiswa (TESIS/ARTIKEL) menentukan label menu.
     user.role === "MAHASISWA"
-      ? await prisma.tesis.findUnique({
+      ? prisma.tesis.findUnique({
           where: { mahasiswaId: user.id },
           select: { track: true },
         })
-      : null;
+      : Promise.resolve(null),
+  ]);
   return (
     <div className="min-h-screen bg-slate-50">
-      <Header
-        name={user.name}
-        nimNip={user.nimNip}
-        role={user.role}
-        unreadCount={unread}
-      />
+      <div className="print:hidden">
+        <Header
+          name={user.name}
+          nimNip={user.nimNip}
+          role={user.role}
+          unreadCount={unread}
+        />
+      </div>
       <div className="flex">
-        <Sidebar role={user.role} mahasiswaTrack={tesis?.track ?? null} />
+        <div className="print:hidden">
+          <Sidebar role={user.role} mahasiswaTrack={tesis?.track ?? null} />
+        </div>
         <main className="flex-1 px-4 lg:px-6 py-6 max-w-screen-2xl mx-auto w-full">
           {children}
         </main>

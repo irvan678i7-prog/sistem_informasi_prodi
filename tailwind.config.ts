@@ -12,18 +12,26 @@ const config: Config = {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
+        // Palet biru royal mengikuti web resmi UM Metro (penmaru.ummetro.ac.id)
         brand: {
-          DEFAULT: "#0e7a5c",
-          50: "#ecfdf5",
-          100: "#d1fae5",
-          500: "#10b981",
-          600: "#059669",
-          700: "#047857",
-          900: "#064e3b",
+          DEFAULT: "#0b46e3",
+          50: "#eef3fe",
+          100: "#d9e4fd",
+          500: "#2d63ea",
+          600: "#0b46e3",
+          700: "#0938b4",
+          900: "#2d3691",
+        },
+        // Aksen kuning tombol "DAFTAR" di web UM Metro
+        accent: {
+          DEFAULT: "#ffc107",
+          100: "#fff3cd",
+          600: "#e0a800",
         },
       },
       fontFamily: {
         sans: [
+          "var(--font-sans)",
           "system-ui",
           "-apple-system",
           "Segoe UI",
