@@ -86,23 +86,21 @@ body {
   font-weight: 700;
   text-decoration: underline;
   letter-spacing: 0.5px;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
   font-size: 15px;
 }
 .kartu-cetak .kartu-meta {
   list-style: decimal;
   padding-left: 20px;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
+  line-height: 1.8;
 }
-.kartu-cetak .kartu-meta li { margin-bottom: 8px; }
+.kartu-cetak .kartu-meta li { margin-bottom: 10px; }
 .kartu-cetak .kartu-label { font-weight: 700; }
-/* Isian handwriting dengan garis titik-titik seperti formulir asli */
+/* Isian handwriting — rapi tanpa titik-titik di bagian atas */
 .kartu-cetak .kartu-isi {
-  font-size: 19px;
-  line-height: 1.7;
-  text-decoration: underline dotted;
-  text-underline-offset: 5px;
-  text-decoration-thickness: 1px;
+  font-size: 16px;
+  line-height: 1.6;
 }
 .kartu-cetak .kartu-tabel {
   width: 100%;
@@ -120,7 +118,10 @@ body {
   text-align: center;
   font-weight: 700;
 }
-.kartu-cetak .kartu-saran { white-space: pre-wrap; }
+.kartu-cetak .kartu-saran { 
+  white-space: normal;
+  line-height: 1.6;
+}
 .kartu-cetak .kartu-identitas {
   margin-top: 16px;
   font-size: 13px;
