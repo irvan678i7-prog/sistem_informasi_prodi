@@ -8,7 +8,6 @@ import {
   GraduationCap,
   Users,
   Building2,
-  ClipboardList,
   ShieldCheck,
   Cog,
   FileText,
