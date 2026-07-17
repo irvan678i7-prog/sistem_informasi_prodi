@@ -70,6 +70,27 @@ export async function POST(req: Request) {
     update: data,
   });
 
+  // BAIK dianggap sebagai persetujuan untuk versi file aktif. Status approval
+  // disimpan per versi sehingga riwayat revisi tetap dapat diaudit.
+  const latest = await prisma.bimbinganArtikelFile.findFirst({
+    where: { tesisId: parsed.tesisId, section: parsed.section },
+    orderBy: { revision: "desc" },
+  });
+  if (latest) {
+    const approvedPatch = isP1
+      ? { p1Approved: parsed.severity === "BAIK" }
+      : { p2Approved: parsed.severity === "BAIK" };
+    const nextP1 = isP1 ? approvedPatch.p1Approved : latest.p1Approved;
+    const nextP2 = isP2 ? approvedPatch.p2Approved : latest.p2Approved;
+    await prisma.bimbinganArtikelFile.update({
+      where: { id: latest.id },
+      data: {
+        ...approvedPatch,
+        ...(nextP1 && nextP2 ? { approvedAt: new Date() } : {}),
+      },
+    });
+  }
+
   await prisma.notification.create({
     data: {
       userId: tesis.mahasiswaId,

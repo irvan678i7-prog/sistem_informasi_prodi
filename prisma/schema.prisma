@@ -286,7 +286,10 @@ model BimbinganArtikelFile {
   revision   Int
   fileUrl     String
   fileName    String
-  createdAt   DateTime @default(now())
+  p1Approved  Boolean  @default(false)
+  p2Approved  Boolean  @default(false)
+  approvedAt  DateTime?
+  createdAt   DateTime   @default(now())
 
   @@index([tesisId, section])
 }
