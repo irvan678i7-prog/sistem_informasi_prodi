@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation";
 import { Upload } from "lucide-react";
 import type { BimbinganSection } from "@prisma/client";
 
-// Per-section PDF uploader for the student. Replaces any existing file for the
-// section on the server (upsert).
+// Per-section Word uploader. Riwayat unggahan disimpan di server agar revisi lama tetap terlacak.
 export function SectionUpload({
   tesisId,
   section,
@@ -59,7 +58,7 @@ export function SectionUpload({
       <input
         ref={inputRef}
         type="file"
-        accept=".pdf,application/pdf"
+        accept=".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         className="hidden"
         onChange={onChange}
       />
@@ -70,9 +69,9 @@ export function SectionUpload({
         className="btn-ghost text-xs inline-flex items-center gap-1"
       >
         <Upload className="w-3.5 h-3.5" />
-        {busy ? "Mengunggah..." : hasFile ? "Ganti PDF" : "Unggah PDF"}
+        {busy ? "Mengunggah..." : hasFile ? "Unggah Revisi Word" : "Unggah Word"}
       </button>
-      <p className="text-[11px] text-slate-400">Maks. 2MB (PDF)</p>
+      <p className="text-[11px] text-slate-400">Maks. 2MB (DOC/DOCX)</p>
       {err && <p className="text-xs text-red-600">{err}</p>}
     </div>
   );

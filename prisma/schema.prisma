@@ -246,6 +246,7 @@ model Tesis {
   attachments     Attachment[]
   timeline        RequestTimeline[]
   bimbinganArtikel BimbinganArtikel[]
+  bimbinganArtikelFiles BimbinganArtikelFile[]
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 }
@@ -275,6 +276,19 @@ model BimbinganArtikel {
   updatedAt     DateTime         @updatedAt
 
   @@unique([tesisId, section])
+}
+
+model BimbinganArtikelFile {
+  id          String   @id @default(cuid())
+  tesis       Tesis    @relation(fields: [tesisId], references: [id], onDelete: Cascade)
+  tesisId     String
+  section     BimbinganSection
+  revision   Int
+  fileUrl     String
+  fileName    String
+  createdAt   DateTime @default(now())
+
+  @@index([tesisId, section])
 }
 
 model SeminarProposal {
