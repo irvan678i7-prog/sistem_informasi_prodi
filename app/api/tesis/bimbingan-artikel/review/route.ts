@@ -23,6 +23,7 @@ const Body = z.object({
     "REVISI_BERAT",
   ]),
   note: z.string().max(2000).optional().nullable(),
+  approved: z.boolean().default(false),
 });
 
 // Pembimbing 1 / 2 mencatat skala revisi + catatan untuk satu bagian. Kolom
@@ -59,8 +60,8 @@ export async function POST(req: Request) {
 
   const note = parsed.note?.trim() || null;
   const data = isP1
-    ? { p1Note: note, p1Severity: parsed.severity, p1ReviewedAt: new Date() }
-    : { p2Note: note, p2Severity: parsed.severity, p2ReviewedAt: new Date() };
+    ? { p1Note: note, p1Severity: parsed.severity, p1ReviewedAt: new Date(), p1Approved: parsed.approved }
+    : { p2Note: note, p2Severity: parsed.severity, p2ReviewedAt: new Date(), p2Approved: parsed.approved };
 
   await prisma.bimbinganArtikel.upsert({
     where: {

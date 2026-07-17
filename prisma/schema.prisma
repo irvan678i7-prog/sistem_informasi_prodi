@@ -268,10 +268,12 @@ model BimbinganArtikel {
   p1Note        String?
   p1Severity    RevisiSeverity?
   p1ReviewedAt  DateTime?
+  p1Approved    Boolean          @default(false)
   // Catatan & skala revisi Pembimbing 2.
   p2Note        String?
   p2Severity    RevisiSeverity?
   p2ReviewedAt  DateTime?
+  p2Approved    Boolean          @default(false)
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
 

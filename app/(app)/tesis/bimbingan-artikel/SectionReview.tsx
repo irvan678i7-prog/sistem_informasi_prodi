@@ -22,6 +22,7 @@ export function SectionReview({
 }) {
   const router = useRouter();
   const [severity, setSeverity] = useState<string>(initialSeverity ?? "");
+  const [approved, setApproved] = useState(false);
   const [note, setNote] = useState(initialNote ?? "");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -39,7 +40,7 @@ export function SectionReview({
       const res = await fetch("/api/tesis/bimbingan-artikel/review", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tesisId, section, severity, note }),
+        body: JSON.stringify({ tesisId, section, severity, note, approved }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -84,8 +85,12 @@ export function SectionReview({
         className="text-xs min-h-[60px]"
       />
       {err && <p className="text-xs text-red-600">{err}</p>}
+      <label className="flex items-center gap-2 text-xs text-slate-700">
+        <input type="checkbox" checked={approved} onChange={(e) => setApproved(e.target.checked)} />
+        ACC sub-penilaian
+      </label>
       <Button size="sm" onClick={save} disabled={busy}>
-        {busy ? "Menyimpan..." : saved ? "Tersimpan ✓" : "Simpan"}
+        {busy ? "Menyimpan..." : saved ? "Tersimpan ✓" : "Simpan penilaian"}
       </Button>
     </div>
   );
