@@ -179,12 +179,23 @@ export default async function TesisIndexPage() {
   }
 
   // Non-mahasiswa: list tesis dalam prodi
+  // Dosen hanya dapat melihat tesis mahasiswa yang menjadi tanggung jawabnya
+  // sebagai PA, Pembimbing 1, atau Pembimbing 2. Kaprodi tetap melihat seluruh
+  // tesis dalam prodinya, sedangkan admin dapat melihat seluruh data.
   const where =
-    user.role === "ADMIN"
-      ? {}
-      : user.prodiId
-        ? { mahasiswa: { prodiId: user.prodiId } }
-        : {};
+    user.role === "DOSEN"
+      ? {
+          OR: [
+            { paId: user.id },
+            { pembimbing1Id: user.id },
+            { pembimbing2Id: user.id },
+          ],
+        }
+      : user.role === "ADMIN"
+        ? {}
+        : user.prodiId
+          ? { mahasiswa: { prodiId: user.prodiId } }
+          : {};
   const list = await prisma.tesis.findMany({
     where,
     include: { mahasiswa: { include: { prodi: true } }, kut: true },
