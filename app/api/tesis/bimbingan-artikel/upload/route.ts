@@ -45,11 +45,20 @@ export async function POST(req: Request) {
   const ab = await file.arrayBuffer();
   const buf = Buffer.from(ab);
   const path = `bimbingan-artikel/${session.uid}/${section}-${Date.now()}-${file.name}`;
-  const { url } = await uploadBufferToSupabase(
-    path,
-    buf,
-    file.type || "application/pdf",
-  );
+  // Browser/Android sering mengirim MIME Word yang kosong atau berbeda-beda.
+  // Normalisasi berdasarkan ekstensi agar Storage tetap menerima dokumen.
+  const contentType = /\.docx$/i.test(file.name)
+    ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    : "application/msword";
+  let url: string;
+  try {
+    ({ url } = await uploadBufferToSupabase(path, buf, contentType));
+  } catch (error) {
+    return NextResponse.json(
+      { message: error instanceof Error ? error.message : "Gagal menyimpan file Word" },
+      { status: 500 },
+    );
+  }
 
   // Satu baris per (tesis, section) — upsert agar unggah ulang mengganti
   // berkas. Jika sebelumnya sudah ada berkas, unggahan baru dihitung sebagai
