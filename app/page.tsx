@@ -7,6 +7,7 @@ import {
   Clock,
   ArrowRight,
   BookOpen,
+  Download,
 } from "lucide-react";
 
 const FEATURES = [
@@ -104,6 +105,15 @@ export default function HomePage() {
                 Masuk dengan NIM / NIDN
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Link>
+              <a
+                href="https://drive.google.com/drive/folders/1DTBOdH4rvg1fPtC3wr_NP1FUNBh5AKCC?usp=drive_link"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center rounded-md border border-white/40 bg-white/10 text-white font-semibold text-base px-6 py-3 hover:bg-white/20 transition-colors"
+              >
+                Unduh Template Syarat Ujian Tesis
+                <Download className="w-4 h-4 ml-2" />
+              </a>
             </div>
             <div className="mt-10 grid grid-cols-3 gap-4 max-w-md">
               {[
