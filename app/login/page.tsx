@@ -31,7 +31,15 @@ export default function LoginPage() {
             </Suspense>
           </div>
         </div>
-        <p className="text-center text-xs text-slate-500 mt-4">
+        <div className="text-center mt-4">
+          <Link
+            href="/"
+            className="text-sm text-brand-700 hover:text-brand-800 underline"
+          >
+            ← Kembali ke Menu Utama
+          </Link>
+        </div>
+        <p className="text-center text-xs text-slate-500 mt-3">
           Login sebagai administrator?{" "}
           <Link href="/admin/login" className="text-brand-700 underline">
             Klik di sini
