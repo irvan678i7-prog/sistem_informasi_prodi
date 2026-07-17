@@ -7,12 +7,21 @@ import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { UploadCloud, Trash2 } from "lucide-react";
 
-export function MasterForm({ initial }: { initial: Record<string, string> }) {
+export function MasterForm({
+  initial,
+  dosen,
+  dosenSignatures,
+}: {
+  initial: Record<string, string>;
+  dosen: { id: string; name: string; nimNip: string }[];
+  dosenSignatures: Record<string, string>;
+}) {
   const router = useRouter();
   const [v, setV] = useState<Record<string, string>>(initial);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingDosen, setUploadingDosen] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [ok, setOk] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
@@ -39,6 +48,18 @@ export function MasterForm({ initial }: { initial: Record<string, string> }) {
 
   function set(key: string, val: string) {
     setV((prev) => ({ ...prev, [key]: val }));
+  }
+
+  async function onUploadDosenTtd(dosenId: string, file: File) {
+    setErr(null); setOk(false); setUploadingDosen(dosenId);
+    try {
+      const fd = new FormData(); fd.append("file", file); fd.append("key", `ttd.dosen.${dosenId}.image`);
+      const res = await fetch("/api/admin/ttd", { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok) { setErr(data.message || "Gagal unggah TTD dosen"); return; }
+      set(`ttd.dosen.${dosenId}.image`, data.url); setOk(true);
+    } catch (e: unknown) { setErr(e instanceof Error ? e.message : "Gagal unggah TTD dosen"); }
+    finally { setUploadingDosen(null); }
   }
 
   async function onUploadTtd(file: File) {
@@ -288,6 +309,23 @@ export function MasterForm({ initial }: { initial: Record<string, string> }) {
             </div>
           </div>
         </FormRow>
+      </section>
+
+      <hr />
+      <section className="space-y-3">
+        <h3 className="text-sm font-semibold text-slate-700">Tanda Tangan Dosen</h3>
+        <p className="text-xs text-slate-500">Tanda tangan dosen dipilih otomatis berdasarkan PA yang menyetujui pengajuan judul.</p>
+        {dosen.map((d) => {
+          const key = `ttd.dosen.${d.id}.image`;
+          const url = v[key] || dosenSignatures[d.id] || "";
+          return <div key={d.id} className="flex items-center gap-4 border rounded-md p-3">
+            <div className="w-24 h-16 border border-dashed rounded grid place-items-center overflow-hidden">{url ? <img src={url} alt={`TTD ${d.name}`} className="max-h-full max-w-full object-contain" /> : <span className="text-xs text-slate-400">Belum ada</span>}</div>
+            <div className="flex-1"><p className="text-sm font-medium">{d.name}</p><p className="text-xs text-slate-500">{d.nimNip}</p>
+              <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={(e) => { const f = e.target.files?.[0]; if (f) onUploadDosenTtd(d.id, f); }} className="mt-2 text-xs" />
+              {uploadingDosen === d.id && <p className="text-xs text-slate-500 mt-1">Mengunggah...</p>}
+            </div>
+          </div>;
+        })}
       </section>
 
       <Button onClick={save} disabled={saving}>

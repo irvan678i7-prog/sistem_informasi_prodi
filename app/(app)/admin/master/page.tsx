@@ -21,11 +21,17 @@ export default async function AdminMasterPage() {
   if (!user) return null;
   if (user.role !== "ADMIN") redirect("/dashboard");
 
+  const dosen = await prisma.user.findMany({
+    where: { role: { in: ["DOSEN", "KAPRODI"] }, isActive: true },
+    select: { id: true, name: true, nimNip: true },
+    orderBy: { name: "asc" },
+  });
+  const dosenKeys = dosen.map((d) => `ttd.dosen.${d.id}.image`);
   const rows = await prisma.appSetting.findMany({
-    where: { key: { in: [...KEYS] } },
+    where: { key: { in: [...KEYS, ...dosenKeys] } },
   });
   const map: Record<string, string> = {};
-  for (const k of KEYS) {
+  for (const k of [...KEYS, ...dosenKeys]) {
     const r = rows.find((x) => x.key === k);
     map[k] = r ? String(r.value ?? "") : "";
   }
@@ -42,7 +48,13 @@ export default async function AdminMasterPage() {
           <CardTitle>Identitas & Tanda Tangan</CardTitle>
         </CardHeader>
         <CardBody>
-          <MasterForm initial={map} />
+          <MasterForm
+            initial={map}
+            dosen={dosen}
+            dosenSignatures={Object.fromEntries(
+              dosen.map((d) => [d.id, map[`ttd.dosen.${d.id}.image`] || ""]),
+            )}
+          />
         </CardBody>
       </Card>
     </div>
