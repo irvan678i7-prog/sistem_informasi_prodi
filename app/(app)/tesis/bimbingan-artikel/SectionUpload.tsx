@@ -24,8 +24,8 @@ export function SectionUpload({
     const file = e.target.files?.[0];
     if (!file) return;
     setErr(null);
-    if (file.size > 2 * 1024 * 1024) {
-      setErr("Ukuran file melebihi batas maksimal 2MB");
+    if (file.size > 10 * 1024 * 1024) {
+      setErr("Ukuran file Word melebihi batas maksimal 10MB");
       if (inputRef.current) inputRef.current.value = "";
       return;
     }
@@ -71,7 +71,7 @@ export function SectionUpload({
         <Upload className="w-3.5 h-3.5" />
         {busy ? "Mengunggah..." : hasFile ? "Unggah Revisi Word" : "Unggah Word"}
       </button>
-      <p className="text-[11px] text-slate-400">Maks. 2MB (DOC/DOCX)</p>
+      <p className="text-[11px] text-slate-400">Maks. 10MB (DOC/DOCX)</p>
       {err && <p className="text-xs text-red-600">{err}</p>}
     </div>
   );

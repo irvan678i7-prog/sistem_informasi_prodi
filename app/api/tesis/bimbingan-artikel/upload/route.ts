@@ -34,9 +34,11 @@ export async function POST(req: Request) {
   if (!allowedWord.includes(file.type) && !/\.(doc|docx)$/i.test(file.name))
     return NextResponse.json({ message: "File harus Word (.doc atau .docx)" }, { status: 400 });
 
-  if (file.size > MAX_UPLOAD_BYTES)
+  // Dokumen Word sering lebih besar dari PDF karena menyimpan gambar/font.
+  // Beri batas 10 MB khusus unggahan bimbingan, tanpa mengubah validasi tipe.
+  if (file.size > 10 * 1024 * 1024)
     return NextResponse.json(
-      { message: `Ukuran file melebihi batas maksimal ${MAX_UPLOAD_LABEL}` },
+      { message: "Ukuran file Word melebihi batas maksimal 10MB" },
       { status: 413 },
     );
 
