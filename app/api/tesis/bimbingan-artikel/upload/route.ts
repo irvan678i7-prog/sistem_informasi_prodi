@@ -27,6 +27,13 @@ export async function POST(req: Request) {
   if (!tesisId || !VALID_SECTIONS.has(section) || !(file instanceof File))
     return NextResponse.json({ message: "Body tidak valid" }, { status: 400 });
 
+  const allowedWord = [
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ];
+  if (!allowedWord.includes(file.type) && !/\.(doc|docx)$/i.test(file.name))
+    return NextResponse.json({ message: "File harus Word (.doc atau .docx)" }, { status: 400 });
+
   if (file.size > MAX_UPLOAD_BYTES)
     return NextResponse.json(
       { message: `Ukuran file melebihi batas maksimal ${MAX_UPLOAD_LABEL}` },
@@ -60,6 +67,10 @@ export async function POST(req: Request) {
     where: { tesisId_section: { tesisId, section } },
     create: { tesisId, section, fileUrl: url, fileName: file.name },
     update: { fileUrl: url, fileName: file.name, revisiKe },
+  });
+  // Simpan setiap unggahan sebagai riwayat; berkas lama tidak dihapus.
+  await prisma.bimbinganArtikelFile.create({
+    data: { tesisId, section, revision: revisiKe, fileUrl: url, fileName: file.name },
   });
 
   // Beritahu kedua pembimbing bahwa ada berkas baru/revisi untuk ditinjau.
