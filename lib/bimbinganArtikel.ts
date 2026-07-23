@@ -37,7 +37,8 @@ export function sectionLabel(section: BimbinganSection): string {
 }
 
 // Load all eight sections for a tesis, creating any missing rows so the
-// worksheet is always complete. Returns rows ordered 1..8.
+// worksheet is always complete. Returns rows ordered 1..8, each with its
+// full upload (revision) history.
 export async function getBimbinganArtikel(tesisId: string) {
   const existing = await prisma.bimbinganArtikel.findMany({
     where: { tesisId },
@@ -59,10 +60,25 @@ export async function getBimbinganArtikel(tesisId: string) {
     refreshed.forEach((r) => bySection.set(r.section, r));
   }
 
+  // Riwayat semua unggahan (revisi) per bagian, terbaru lebih dulu. Setiap
+  // unggahan tersimpan di BimbinganArtikelFile sehingga versi lama tetap
+  // dapat dibuka oleh dosen maupun mahasiswa.
+  const files = await prisma.bimbinganArtikelFile.findMany({
+    where: { tesisId },
+    orderBy: [{ revision: "desc" }, { createdAt: "desc" }],
+  });
+  const historyBySection = new Map<BimbinganSection, typeof files>();
+  for (const f of files) {
+    const list = historyBySection.get(f.section);
+    if (list) list.push(f);
+    else historyBySection.set(f.section, [f]);
+  }
+
   // Return in canonical 1..8 order.
   return BIMBINGAN_SECTIONS.map((meta) => ({
     meta,
     row: bySection.get(meta.section)!,
+    history: historyBySection.get(meta.section) ?? [],
   }));
 }
 

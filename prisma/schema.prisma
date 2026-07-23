@@ -247,6 +247,7 @@ model Tesis {
   timeline        RequestTimeline[]
   bimbinganArtikel BimbinganArtikel[]
   bimbinganArtikelFiles BimbinganArtikelFile[]
+  seminarBerkas   SeminarBerkas[]
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 }
@@ -306,6 +307,21 @@ model SeminarProposal {
   deadlineRevisi DateTime?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
+}
+
+// Berkas syarat mendaftar Seminar Proposal (check list 11 item).
+// Satu baris per (tesis, item); unggah ulang menggantikan berkas sebelumnya.
+model SeminarBerkas {
+  id        String   @id @default(cuid())
+  tesis     Tesis    @relation(fields: [tesisId], references: [id], onDelete: Cascade)
+  tesisId   String
+  item      Int
+  fileUrl   String
+  fileName  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tesisId, item])
 }
 
 model BimbinganLog {
