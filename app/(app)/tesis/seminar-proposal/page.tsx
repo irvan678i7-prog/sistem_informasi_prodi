@@ -17,6 +17,13 @@ import {
 import { previewUrl } from "@/lib/preview";
 import { ItemUpload } from "./ItemUpload";
 
+type SeminarBerkasRow = {
+  id: string;
+  item: number;
+  fileUrl: string;
+  fileName: string;
+};
+
 // Menu Seminar Proposal (mahasiswa): check list 11 berkas syarat mendaftar
 // Seminar Proposal Tesis + form upload per item dan tautan unduh template.
 export default async function SeminarProposalBerkasPage() {
@@ -26,12 +33,31 @@ export default async function SeminarProposalBerkasPage() {
 
   const tesis = await prisma.tesis.findUnique({
     where: { mahasiswaId: user.id },
-    include: { seminarBerkas: true },
   });
   if (!tesis) redirect("/tesis");
 
-  const byItem = new Map(tesis.seminarBerkas.map((b) => [b.item, b]));
-  const uploaded = tesis.seminarBerkas.length;
+  // Pisahkan query berkas dari query tesis agar halaman tidak menjadi error
+  // penuh ketika deployment baru masih menyinkronkan tabel SeminarBerkas.
+  let seminarBerkas: SeminarBerkasRow[] = [];
+  let databaseReady = true;
+  try {
+    seminarBerkas = await prisma.seminarBerkas.findMany({
+      where: { tesisId: tesis.id },
+      select: {
+        id: true,
+        item: true,
+        fileUrl: true,
+        fileName: true,
+      },
+      orderBy: { item: "asc" },
+    });
+  } catch (error) {
+    databaseReady = false;
+    console.error("Gagal memuat berkas Seminar Proposal:", error);
+  }
+
+  const byItem = new Map(seminarBerkas.map((b) => [b.item, b]));
+  const uploaded = seminarBerkas.length;
 
   return (
     <div className="max-w-4xl mx-auto space-y-4">
@@ -53,6 +79,13 @@ export default async function SeminarProposalBerkasPage() {
           <Download className="w-4 h-4" /> Download Template
         </a>
       </div>
+
+      {!databaseReady && (
+        <Alert variant="warning">
+          Penyimpanan berkas sedang disiapkan setelah pembaruan sistem. Halaman
+          tetap dapat dibuka; silakan coba unggah kembali beberapa saat lagi.
+        </Alert>
+      )}
 
       <Alert variant="info">
         Unggah berkas untuk setiap item di bawah. Item yang sudah diunggah
