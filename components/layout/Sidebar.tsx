@@ -12,6 +12,7 @@ import {
   Cog,
   FileText,
   BookOpen,
+  ClipboardList,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Role } from "@prisma/client";
@@ -43,6 +44,13 @@ const NAV: NavItem[] = [
     href: "/tesis/bimbingan-artikel",
     label: "Bimbingan Tesis",
     icon: BookOpen,
+    roles: ["MAHASISWA"],
+  },
+  // Check list berkas syarat + form upload untuk mendaftar Seminar Proposal.
+  {
+    href: "/tesis/seminar-proposal",
+    label: "Seminar Proposal",
+    icon: ClipboardList,
     roles: ["MAHASISWA"],
   },
   {

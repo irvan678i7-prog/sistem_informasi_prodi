@@ -4,11 +4,12 @@ import { formatDate } from "@/lib/utils";
 import type { BimbinganArtikelRows } from "@/lib/bimbinganArtikel";
 import type { RevisiSeverity } from "@prisma/client";
 import { PdfPreview } from "./PdfPreview";
+import { RevisionHistory } from "./RevisionHistory";
 import { SectionUpload } from "./SectionUpload";
 import { SectionReview } from "./SectionReview";
 
 // Who is viewing the worksheet, which decides what is editable:
-// - "mahasiswa": may upload a PDF per section
+// - "mahasiswa": may upload a Word file per section
 // - "p1" / "p2": may edit their own evaluation column
 // - "readonly": kaprodi/admin/other dosen — view only
 export type WorksheetMode = "mahasiswa" | "p1" | "p2" | "readonly";
@@ -68,12 +69,12 @@ export function Worksheet({
                   Pembimbing 2
                 </th>
                 <th className="px-3 py-2 font-medium text-slate-600 w-56">
-                  Preview PDF
+                  Berkas & Pratinjau
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
-              {rows.map(({ meta, row }) => (
+              {rows.map(({ meta, row, history }) => (
                 <tr key={meta.section} className="align-top">
                   <td className="px-3 py-3 text-slate-500">{meta.no}</td>
                   <td className="px-3 py-3 font-medium text-slate-900">
@@ -116,7 +117,7 @@ export function Worksheet({
                     )}
                   </td>
 
-                  {/* Berkas mahasiswa + preview PDF */}
+                  {/* Berkas mahasiswa + pratinjau (Word dirender inline) */}
                   <td className="px-3 py-3 space-y-2">
                     {row.fileUrl ? (
                       <div className="space-y-1">
@@ -129,6 +130,17 @@ export function Worksheet({
                       </div>
                     ) : (
                       <p className="text-xs text-slate-400">Belum ada berkas</p>
+                    )}
+                    {history.length > 0 && (
+                      <RevisionHistory
+                        items={history.map((f) => ({
+                          id: f.id,
+                          revision: f.revision,
+                          fileUrl: f.fileUrl,
+                          fileName: f.fileName,
+                          uploadedAt: formatDate(f.createdAt),
+                        }))}
+                      />
                     )}
                     {mode === "mahasiswa" && (
                       <SectionUpload
