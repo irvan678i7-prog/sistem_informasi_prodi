@@ -53,6 +53,13 @@ const NAV: NavItem[] = [
     icon: ClipboardList,
     roles: ["MAHASISWA"],
   },
+  // Halaman TU: cek kelengkapan berkas Seminar Proposal mahasiswa.
+  {
+    href: "/tu/seminar-berkas",
+    label: "Cek Berkas Seminar",
+    icon: ClipboardList,
+    roles: ["TU"],
+  },
   {
     href: "/bimbingan/artikel",
     label: "Kartu Bimbingan",

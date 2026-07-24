@@ -1,7 +1,9 @@
 /**
- * Daftar 11 berkas syarat untuk mendaftar Seminar Proposal Tesis,
+ * Daftar 10 berkas syarat untuk mendaftar Seminar Proposal Tesis,
  * sesuai format resmi "CHECK LIST BERKAS SYARAT UNTUK MENDAFTAR SEMINAR
  * PROPOSAL TESIS" Program Pascasarjana UM Metro.
+ * Catatan: item "Semua persyaratan dimasukkan ke dalam Map Snail" telah
+ * dihapus sesuai kebijakan prodi.
  */
 export const SEMINAR_BERKAS_ITEMS: string[] = [
   "Form Asli Kelayakan Seminar Proposal yang ditandatangani oleh Dosen Pembimbing, Kaprodi, dan Direktur",
@@ -13,7 +15,6 @@ export const SEMINAR_BERKAS_ITEMS: string[] = [
   "Cetak handout PowerPoint untuk presentasi pada saat Seminar dan juga dicetak",
   "Fotokopi kartu bimbingan dari awal hingga sampai ACC Seminar",
   "Berita acara, instrumen, dan lembar saran",
-  "Semua persyaratan dimasukkan ke dalam Map Snail",
   "Pengembalian ke TU setelah pelaksanaan Seminar Proposal Tesis dan ditandatangani Direktur PPS (berkas berita acara, instrumen, dan lembar saran)",
 ];
 

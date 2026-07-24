@@ -5,6 +5,7 @@ export const ROLE_LABEL: Record<Role, string> = {
   KAPRODI: "Ketua Program Studi",
   DOSEN: "Dosen",
   MAHASISWA: "Mahasiswa",
+  TU: "Tata Usaha",
 };
 
 // Administrator: kelola akun, data master, audit log. TIDAK ikut alur akademik.
@@ -35,6 +36,12 @@ export function canApproveLetter(role: Role) {
   return role === "KAPRODI";
 }
 
+// TU (Tata Usaha): cek kelengkapan berkas Seminar Proposal mahasiswa dan
+// mengisi ceklis ADA / TIDAK ADA. Kaprodi & admin juga boleh membuka halamannya.
+export function canCheckSeminarBerkas(role: Role) {
+  return role === "TU" || role === "KAPRODI" || role === "ADMIN";
+}
+
 // Apakah role tertentu ikut alur akademik (verifikasi/persetujuan)?
 export function isAcademicHandler(role: Role) {
   return isDosen(role);
@@ -45,5 +52,5 @@ export const ROLE_TITLE: Partial<Record<Role, string>> = {
   KAPRODI: "Ketua Program Studi",
   ADMIN: "Administrator",
   DOSEN: "Dosen",
+  TU: "Tata Usaha",
 };
-
