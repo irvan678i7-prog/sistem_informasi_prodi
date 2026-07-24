@@ -31,11 +31,31 @@ export default async function SeminarProposalBerkasPage() {
   if (!user) return null;
   if (user.role !== "MAHASISWA") redirect("/tesis/seminar");
 
-  const tesis = await prisma.tesis.findUnique({
-    where: { mahasiswaId: user.id },
-    select: { id: true, seminarChecklist: true },
-  });
-  if (!tesis) redirect("/tesis");
+  // Ambil tesis mahasiswa. Kolom seminarChecklist bisa saja belum ada di
+  // database (jika SQL pembaruan belum dijalankan di Supabase), jadi query
+  // dibuat bertingkat agar halaman tidak error.
+  let tesisId: string | null = null;
+  let tuChecks: boolean[] = [];
+  try {
+    const tesis = await prisma.tesis.findUnique({
+      where: { mahasiswaId: user.id },
+      select: { id: true, seminarChecklist: true },
+    });
+    if (tesis) {
+      tesisId = tesis.id;
+      tuChecks = Array.isArray(tesis.seminarChecklist)
+        ? (tesis.seminarChecklist as boolean[])
+        : [];
+    }
+  } catch (error) {
+    console.error("Kolom seminarChecklist belum tersedia:", error);
+    const tesis = await prisma.tesis.findUnique({
+      where: { mahasiswaId: user.id },
+      select: { id: true },
+    });
+    if (tesis) tesisId = tesis.id;
+  }
+  if (!tesisId) redirect("/tesis");
 
   // Pisahkan query berkas dari query tesis agar halaman tidak menjadi error
   // penuh ketika deployment baru masih menyinkronkan tabel SeminarBerkas.
@@ -43,7 +63,7 @@ export default async function SeminarProposalBerkasPage() {
   let databaseReady = true;
   try {
     seminarBerkas = await prisma.seminarBerkas.findMany({
-      where: { tesisId: tesis.id },
+      where: { tesisId },
       select: {
         id: true,
         item: true,
@@ -60,9 +80,6 @@ export default async function SeminarProposalBerkasPage() {
   const byItem = new Map(seminarBerkas.map((b) => [b.item, b]));
   const uploaded = seminarBerkas.length;
   // Ceklis hasil pemeriksaan TU (array boolean per item).
-  const tuChecks = Array.isArray(tesis.seminarChecklist)
-    ? (tesis.seminarChecklist as boolean[])
-    : [];
   const sudahDicekTU = tuChecks.length > 0;
 
   return (
@@ -183,7 +200,7 @@ export default async function SeminarProposalBerkasPage() {
                           </div>
                         )}
                         <ItemUpload
-                          tesisId={tesis.id}
+                          tesisId={tesisId}
                           item={no}
                           hasFile={!!berkas}
                         />
