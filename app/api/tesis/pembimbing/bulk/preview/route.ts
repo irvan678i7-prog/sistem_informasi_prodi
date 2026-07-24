@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 
 async function parseXlsx(buf: ArrayBuffer): Promise<string[][]> {
   const wb = new ExcelJS.Workbook();
-  await wb.xlsx.load(Buffer.from(buf));
+  await wb.xlsx.load(buf);
   const ws = wb.worksheets[0];
   const rows: string[][] = [];
   if (!ws) return rows;

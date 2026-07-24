@@ -121,8 +121,8 @@ export async function GET() {
     }
   }
 
-  const buf = (await wb.xlsx.writeBuffer()) as Buffer;
-  return new NextResponse(new Uint8Array(buf), {
+  const xlsxData = await wb.xlsx.writeBuffer();
+  return new NextResponse(new Uint8Array(xlsxData as ArrayBuffer), {
     headers: {
       "Content-Type":
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
