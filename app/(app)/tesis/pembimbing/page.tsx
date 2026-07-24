@@ -1,4 +1,6 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
+import { UploadCloud } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import {
@@ -59,15 +61,23 @@ export default async function ManagePembimbingPage() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">
-          Mahasiswa & Pembimbing
-        </h1>
-        <p className="text-sm text-slate-500">
-          Lihat semua mahasiswa di prodi Anda. Tetapkan Pembimbing Akademik
-          (PA), serta Pembimbing 1 / 2 untuk tesis. Setiap penetapan
-          Pembimbing 1/2 menerbitkan SK + notifikasi otomatis ke dosen.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">
+            Mahasiswa & Pembimbing
+          </h1>
+          <p className="text-sm text-slate-500">
+            Lihat semua mahasiswa di prodi Anda. Tetapkan Pembimbing Akademik
+            (PA), serta Pembimbing 1 / 2 untuk tesis. Setiap penetapan
+            Pembimbing 1/2 menerbitkan SK + notifikasi otomatis ke dosen.
+          </p>
+        </div>
+        <Link
+          href="/tesis/pembimbing/bulk"
+          className="inline-flex items-center gap-1.5 rounded-md bg-brand-600 px-3 py-2 text-sm font-medium text-white hover:bg-brand-700"
+        >
+          <UploadCloud className="w-4 h-4" /> Bulk Upload Pembimbing 1 & 2
+        </Link>
       </div>
 
       {tesisList.length === 0 ? (
