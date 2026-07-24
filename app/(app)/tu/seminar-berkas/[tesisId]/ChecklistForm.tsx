@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ExternalLink, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Alert } from "@/components/ui/alert";
 
 type ItemRow = {
   no: number;

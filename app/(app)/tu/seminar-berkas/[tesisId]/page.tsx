@@ -85,8 +85,8 @@ export default async function TuSeminarBerkasDetailPage({
         <CardHeader>
           <CardTitle>Check List Berkas Syarat Seminar Proposal</CardTitle>
           <CardDescription>
-            Klik \u201cLihat\u201d untuk memeriksa isi berkas, lalu ceklis ADA /
-            TIDAK ADA dan simpan.
+            Klik &quot;Lihat&quot; untuk memeriksa isi berkas, lalu ceklis ADA
+            / TIDAK ADA dan simpan.
           </CardDescription>
         </CardHeader>
         <CardBody className="p-0">
