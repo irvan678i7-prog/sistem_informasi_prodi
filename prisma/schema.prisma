@@ -14,6 +14,7 @@ enum Role {
   KAPRODI
   DOSEN
   MAHASISWA
+  TU
 }
 
 enum LetterType {
@@ -248,6 +249,8 @@ model Tesis {
   bimbinganArtikel BimbinganArtikel[]
   bimbinganArtikelFiles BimbinganArtikelFile[]
   seminarBerkas   SeminarBerkas[]
+  // Ceklis TU untuk berkas Seminar Proposal: array boolean per item (ADA / TIDAK ADA).
+  seminarChecklist Json?
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 }
@@ -309,7 +312,7 @@ model SeminarProposal {
   updatedAt     DateTime      @updatedAt
 }
 
-// Berkas syarat mendaftar Seminar Proposal (check list 11 item).
+// Berkas syarat mendaftar Seminar Proposal (check list 10 item).
 // Satu baris per (tesis, item); unggah ulang menggantikan berkas sebelumnya.
 model SeminarBerkas {
   id        String   @id @default(cuid())

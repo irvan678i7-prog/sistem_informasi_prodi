@@ -12,6 +12,7 @@ const ROLE_OPTIONS: Role[] = [
   "MAHASISWA",
   "DOSEN",
   "KAPRODI",
+  "TU",
   "ADMIN",
 ];
 
@@ -104,7 +105,7 @@ export function UserForm({
             required
           />
         </FormRow>
-        <FormRow label="NIM / NIDN" htmlFor="nim" required>
+        <FormRow label="NIM / NIDN / NIP" htmlFor="nim" required>
           <Input
             id="nim"
             value={nimNip}

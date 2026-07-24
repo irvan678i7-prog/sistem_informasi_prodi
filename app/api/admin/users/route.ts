@@ -7,7 +7,7 @@ const Body = z.object({
   name: z.string().min(2),
   email: z.string().email(),
   nimNip: z.string().min(2),
-  role: z.enum(["ADMIN", "KAPRODI", "DOSEN", "MAHASISWA"]),
+  role: z.enum(["ADMIN", "KAPRODI", "DOSEN", "MAHASISWA", "TU"]),
   prodiId: z.string().nullable().optional(),
   password: z.string().min(6),
   phone: z.string().nullable().optional(),

@@ -24,7 +24,7 @@ type SeminarBerkasRow = {
   fileName: string;
 };
 
-// Menu Seminar Proposal (mahasiswa): check list 11 berkas syarat mendaftar
+// Menu Seminar Proposal (mahasiswa): check list berkas syarat mendaftar
 // Seminar Proposal Tesis + form upload per item dan tautan unduh template.
 export default async function SeminarProposalBerkasPage() {
   const user = await getCurrentUser();
@@ -33,6 +33,7 @@ export default async function SeminarProposalBerkasPage() {
 
   const tesis = await prisma.tesis.findUnique({
     where: { mahasiswaId: user.id },
+    select: { id: true, seminarChecklist: true },
   });
   if (!tesis) redirect("/tesis");
 
@@ -58,6 +59,11 @@ export default async function SeminarProposalBerkasPage() {
 
   const byItem = new Map(seminarBerkas.map((b) => [b.item, b]));
   const uploaded = seminarBerkas.length;
+  // Ceklis hasil pemeriksaan TU (array boolean per item).
+  const tuChecks = Array.isArray(tesis.seminarChecklist)
+    ? (tesis.seminarChecklist as boolean[])
+    : [];
+  const sudahDicekTU = tuChecks.length > 0;
 
   return (
     <div className="max-w-4xl mx-auto space-y-4">
@@ -89,8 +95,8 @@ export default async function SeminarProposalBerkasPage() {
 
       <Alert variant="info">
         Unggah berkas untuk setiap item di bawah. Item yang sudah diunggah
-        otomatis berstatus &quot;Ada&quot;. Template berkas dapat diunduh
-        melalui tombol Download Template.
+        otomatis berstatus &quot;Ada&quot;, kemudian diperiksa oleh TU.
+        Template berkas dapat diunduh melalui tombol Download Template.
       </Alert>
 
       <Card>
@@ -99,6 +105,8 @@ export default async function SeminarProposalBerkasPage() {
           <CardDescription>
             {uploaded} dari {SEMINAR_BERKAS_ITEMS.length} berkas telah
             diunggah.
+            {sudahDicekTU &&
+              " Berkas Anda sudah diperiksa oleh TU (lihat kolom Ceklis TU)."}
           </CardDescription>
         </CardHeader>
         <CardBody className="p-0">
@@ -114,6 +122,9 @@ export default async function SeminarProposalBerkasPage() {
                   </th>
                   <th className="px-3 py-2 font-medium text-slate-600 w-24">
                     Status
+                  </th>
+                  <th className="px-3 py-2 font-medium text-slate-600 w-24">
+                    Ceklis TU
                   </th>
                   <th className="px-3 py-2 font-medium text-slate-600 w-56">
                     Upload / Berkas
@@ -137,6 +148,21 @@ export default async function SeminarProposalBerkasPage() {
                           <span className="inline-block rounded bg-slate-100 text-slate-500 text-[11px] font-semibold px-1.5 py-0.5">
                             Tidak Ada
                           </span>
+                        )}
+                      </td>
+                      <td className="px-3 py-3">
+                        {sudahDicekTU ? (
+                          tuChecks[i] ? (
+                            <span className="inline-block rounded bg-blue-100 text-blue-800 text-[11px] font-semibold px-1.5 py-0.5">
+                              &#10003; ADA
+                            </span>
+                          ) : (
+                            <span className="inline-block rounded bg-red-100 text-red-700 text-[11px] font-semibold px-1.5 py-0.5">
+                              TIDAK ADA
+                            </span>
+                          )
+                        ) : (
+                          <span className="text-xs text-slate-400">—</span>
                         )}
                       </td>
                       <td className="px-3 py-3 space-y-1">
