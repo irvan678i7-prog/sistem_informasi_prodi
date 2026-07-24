@@ -15,7 +15,7 @@ import { BulkUploadForm } from "./BulkUploadForm";
 
 export const dynamic = "force-dynamic";
 
-// Bulk upload Pembimbing 1 & 2 (Kaprodi/Admin) lewat file CSV.
+// Bulk upload PA & Pembimbing 1/2 (Kaprodi/Admin) lewat file Excel.
 export default async function BulkPembimbingPage() {
   const user = await getCurrentUser();
   if (!user) return null;
@@ -43,15 +43,15 @@ export default async function BulkPembimbingPage() {
         });
 
   return (
-    <div className="max-w-4xl mx-auto space-y-4">
+    <div className="max-w-5xl mx-auto space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">
-            Bulk Upload Pembimbing 1 & 2
+            Bulk Upload PA & Pembimbing 1/2
           </h1>
           <p className="text-sm text-slate-500">
-            Tetapkan Pembimbing 1 dan Pembimbing 2 untuk banyak mahasiswa
-            sekaligus lewat file CSV.
+            Tetapkan PA (Pembimbing Akademik), Pembimbing 1, dan Pembimbing 2
+            untuk banyak mahasiswa sekaligus lewat file Excel.
           </p>
         </div>
         <Link
@@ -63,18 +63,21 @@ export default async function BulkPembimbingPage() {
       </div>
 
       <Alert variant="info">
-        Langkah: 1) Download template — nama mahasiswa sudah terisi otomatis
-        sesuai database. 2) Isi kolom Pembimbing 1 dan Pembimbing 2 dengan NIP
-        atau nama dosen persis seperti pada daftar dosen di bawah. 3) Simpan
-        sebagai CSV lalu upload di sini.
+        Langkah: 1) Download template Excel — nama mahasiswa sudah terisi
+        otomatis sesuai database. 2) Isi kolom PA, Pembimbing 1, dan
+        Pembimbing 2 — tinggal pilih nama dosen dari dropdown di tiap sel;
+        kolom yang dikosongkan tidak akan diubah. 3) Upload file di sini,
+        periksa pratinjau, lalu konfirmasi untuk menyimpan.
       </Alert>
 
       <Card>
         <CardHeader>
-          <CardTitle>1. Download Template</CardTitle>
+          <CardTitle>1. Download Template (Excel)</CardTitle>
           <CardDescription>
-            Template CSV sudah berisi NIM dan nama seluruh mahasiswa prodi
-            Anda, beserta pembimbing saat ini jika sudah pernah ditetapkan.
+            Template .xlsx sudah berisi NIM dan nama seluruh mahasiswa prodi
+            Anda, beserta PA dan pembimbing saat ini jika sudah pernah
+            ditetapkan. Kolom PA/pembimbing memiliki dropdown pilihan dosen,
+            dan daftar lengkap dosen ada di sheet Daftar Dosen.
           </CardDescription>
         </CardHeader>
         <CardBody>
@@ -82,19 +85,21 @@ export default async function BulkPembimbingPage() {
             href="/api/tesis/pembimbing/bulk/template"
             className="inline-flex items-center gap-1.5 rounded-md bg-brand-600 px-3 py-2 text-sm font-medium text-white hover:bg-brand-700"
           >
-            <Download className="w-4 h-4" /> Download Template (CSV)
+            <Download className="w-4 h-4" /> Download Template (Excel)
           </a>
         </CardBody>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>2. Upload File yang Sudah Diisi</CardTitle>
+          <CardTitle>2. Upload & Preview</CardTitle>
           <CardDescription>
-            Baris dengan kolom pembimbing kosong akan dilewati. Bulk upload
-            tidak menerbitkan SK otomatis; SK per mahasiswa dapat diterbitkan
-            lewat tombol Tetapkan Pembimbing di halaman Mahasiswa &
-            Pembimbing.
+            Setelah upload, sistem menampilkan pratinjau hasil pembacaan file
+            — belum ada yang disimpan sampai Anda menekan Konfirmasi &
+            Simpan. Baris dengan kolom PA dan pembimbing kosong akan
+            dilewati. Bulk upload tidak menerbitkan SK otomatis; SK per
+            mahasiswa dapat diterbitkan lewat tombol Tetapkan Pembimbing di
+            halaman Mahasiswa & Pembimbing.
           </CardDescription>
         </CardHeader>
         <CardBody>
@@ -106,8 +111,8 @@ export default async function BulkPembimbingPage() {
         <CardHeader>
           <CardTitle>Daftar Dosen (Referensi Pengisian)</CardTitle>
           <CardDescription>
-            Gunakan NIP atau nama persis seperti di bawah pada kolom
-            Pembimbing 1 / Pembimbing 2.
+            Dropdown di template memakai nama dosen berikut. Anda juga bisa
+            mengetik NIP atau nama persis seperti di bawah.
           </CardDescription>
         </CardHeader>
         <CardBody className="p-0">
