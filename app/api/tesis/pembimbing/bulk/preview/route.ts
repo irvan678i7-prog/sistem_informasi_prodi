@@ -19,7 +19,7 @@ async function parseXlsx(buf: ArrayBuffer): Promise<string[][]> {
   if (!ws) return rows;
   ws.eachRow((row) => {
     const cells: string[] = [];
-    for (let c = 1; c <= 4; c++) {
+    for (let c = 1; c <= 5; c++) {
       cells.push(String(row.getCell(c).text ?? ""));
     }
     rows.push(cells);
@@ -28,7 +28,7 @@ async function parseXlsx(buf: ArrayBuffer): Promise<string[][]> {
 }
 
 /**
- * Preview bulk upload Pembimbing 1 & 2 (Kaprodi/Admin).
+ * Preview bulk upload PA & Pembimbing 1/2 (Kaprodi/Admin).
  * Membaca file Excel/CSV, memvalidasi setiap baris, dan mengembalikan
  * hasilnya TANPA menyimpan apa pun. Penyimpanan dilakukan endpoint
  * terpisah setelah user menekan konfirmasi.

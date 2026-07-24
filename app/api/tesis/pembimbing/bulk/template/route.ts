@@ -6,9 +6,9 @@ import { getSession } from "@/lib/auth";
 export const dynamic = "force-dynamic";
 
 /**
- * Download template Excel (.xlsx) bulk upload Pembimbing 1 & 2
+ * Download template Excel (.xlsx) bulk upload PA & Pembimbing 1/2
  * (Kaprodi/Admin). Template sudah berisi NIM + nama mahasiswa sesuai
- * database, kolom pembimbing memiliki dropdown pilihan dosen, dan ada
+ * database, kolom PA/pembimbing memiliki dropdown pilihan dosen, dan ada
  * sheet Daftar Dosen sebagai referensi.
  */
 export async function GET() {
@@ -29,6 +29,7 @@ export async function GET() {
       where: isKaprodi ? { mahasiswa: { prodiId: me!.prodiId! } } : {},
       select: {
         mahasiswa: { select: { name: true, nimNip: true } },
+        pa: { select: { name: true } },
         pembimbing1: { select: { name: true } },
         pembimbing2: { select: { name: true } },
       },
@@ -55,14 +56,16 @@ export async function GET() {
   });
   ws.columns = [
     { header: "NIM", key: "nim", width: 18 },
-    { header: "Nama Mahasiswa", key: "nama", width: 38 },
-    { header: "Pembimbing 1", key: "p1", width: 38 },
-    { header: "Pembimbing 2 (opsional)", key: "p2", width: 38 },
+    { header: "Nama Mahasiswa", key: "nama", width: 36 },
+    { header: "PA (Pembimbing Akademik)", key: "pa", width: 36 },
+    { header: "Pembimbing 1", key: "p1", width: 36 },
+    { header: "Pembimbing 2 (opsional)", key: "p2", width: 36 },
   ];
   for (const t of tesisList) {
     ws.addRow({
       nim: t.mahasiswa.nimNip,
       nama: t.mahasiswa.name,
+      pa: t.pa?.name ?? "",
       p1: t.pembimbing1?.name ?? "",
       p2: t.pembimbing2?.name ?? "",
     });
@@ -98,16 +101,16 @@ export async function GET() {
   styleHeader(ws);
   styleHeader(wsDosen);
 
-  // Garis bantu tipis + dropdown pilihan dosen untuk kolom Pembimbing 1/2.
+  // Garis bantu tipis + dropdown pilihan dosen untuk kolom PA/Pembimbing.
   const dosenRange = `'Daftar Dosen'!$B$2:$B$${dosenList.length + 1}`;
   for (let r = 2; r <= tesisList.length + 1; r++) {
-    for (let c = 1; c <= 4; c++) {
+    for (let c = 1; c <= 5; c++) {
       ws.getCell(r, c).border = {
         bottom: { style: "hair", color: { argb: "FFCBD5E1" } },
       };
     }
     if (dosenList.length > 0) {
-      for (const col of ["C", "D"]) {
+      for (const col of ["C", "D", "E"]) {
         ws.getCell(`${col}${r}`).dataValidation = {
           type: "list",
           allowBlank: true,
@@ -124,7 +127,7 @@ export async function GET() {
       "Content-Type":
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       "Content-Disposition":
-        'attachment; filename="template-pembimbing-1-2.xlsx"',
+        'attachment; filename="template-pa-pembimbing.xlsx"',
     },
   });
 }

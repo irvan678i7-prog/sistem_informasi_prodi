@@ -9,8 +9,10 @@ import { Alert } from "@/components/ui/alert";
 type RowResult = {
   nim: string;
   nama: string;
+  pa: string;
   p1: string;
   p2: string;
+  paNama: string | null;
   p1Nama: string | null;
   p2Nama: string | null;
   status: "ok" | "dilewati" | "error";
@@ -63,6 +65,7 @@ function ResultTable({
           <tr className="text-left">
             <th className="px-3 py-2 font-medium text-slate-600 w-28">NIM</th>
             <th className="px-3 py-2 font-medium text-slate-600">Nama</th>
+            <th className="px-3 py-2 font-medium text-slate-600">PA</th>
             <th className="px-3 py-2 font-medium text-slate-600">
               Pembimbing 1
             </th>
@@ -82,6 +85,9 @@ function ResultTable({
             <tr key={i} className="align-top">
               <td className="px-3 py-2 text-slate-500">{r.nim}</td>
               <td className="px-3 py-2 text-slate-900">{r.nama}</td>
+              <td className="px-3 py-2 text-slate-700">
+                {r.paNama ?? (r.pa || "—")}
+              </td>
               <td className="px-3 py-2 text-slate-700">
                 {r.p1Nama ?? (r.p1 || "—")}
               </td>
@@ -152,6 +158,7 @@ export function BulkUploadForm() {
       const rows = preview.map((r) => ({
         nim: r.nim,
         nama: r.nama,
+        pa: r.pa,
         p1: r.p1,
         p2: r.p2,
       }));
@@ -167,7 +174,7 @@ export function BulkUploadForm() {
       }
       setFinalResults(data.results ?? []);
       setSummary(
-        `${data.updated ?? 0} mahasiswa berhasil disimpan. Notifikasi otomatis dikirim ke mahasiswa dan dosen pembimbing.`,
+        `${data.updated ?? 0} mahasiswa berhasil disimpan. Notifikasi otomatis dikirim ke mahasiswa dan dosen terkait.`,
       );
       setPreview(null);
       router.refresh();

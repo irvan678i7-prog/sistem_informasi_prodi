@@ -1,9 +1,10 @@
 import { prisma } from "@/lib/prisma";
 
-// Satu baris input dari file bulk upload pembimbing.
+// Satu baris input dari file bulk upload PA & pembimbing.
 export type BulkRowInput = {
   nim: string;
   nama: string;
+  pa: string;
   p1: string;
   p2: string;
 };
@@ -12,8 +13,10 @@ export type BulkRowInput = {
 export type BulkRowCheck = {
   nim: string;
   nama: string;
+  pa: string;
   p1: string;
   p2: string;
+  paNama: string | null;
   p1Nama: string | null;
   p2Nama: string | null;
   status: "ok" | "dilewati" | "error";
@@ -21,7 +24,8 @@ export type BulkRowCheck = {
   tesisId?: string;
   tesisStage?: string;
   mahasiswaId?: string;
-  p1Id?: string;
+  paId?: string | null;
+  p1Id?: string | null;
   p2Id?: string | null;
 };
 
@@ -73,21 +77,32 @@ export function parseCsv(text: string): string[][] {
 }
 
 // Ubah tabel mentah (termasuk header di baris pertama) menjadi baris input.
+// Urutan kolom: NIM | Nama | PA | Pembimbing 1 | Pembimbing 2.
 export function rowsFromTable(table: string[][]): BulkRowInput[] {
   return table
     .slice(1)
     .map((r) => ({
       nim: (r[0] ?? "").trim(),
       nama: (r[1] ?? "").trim(),
-      p1: (r[2] ?? "").trim(),
-      p2: (r[3] ?? "").trim(),
+      pa: (r[2] ?? "").trim(),
+      p1: (r[3] ?? "").trim(),
+      p2: (r[4] ?? "").trim(),
     }))
-    .filter((r) => r.nim !== "" || r.nama !== "" || r.p1 !== "" || r.p2 !== "");
+    .filter(
+      (r) =>
+        r.nim !== "" ||
+        r.nama !== "" ||
+        r.pa !== "" ||
+        r.p1 !== "" ||
+        r.p2 !== "",
+    );
 }
 
 /**
  * Validasi seluruh baris TANPA menyimpan apa pun ke database.
  * Dipakai oleh endpoint preview dan (ulang) oleh endpoint simpan.
+ * Kolom kosong berarti tidak diubah, kecuali Pembimbing 2 yang ikut
+ * dikosongkan saat Pembimbing 1 diisi.
  */
 export async function checkBulkRows(
   rows: BulkRowInput[],
@@ -113,8 +128,10 @@ export async function checkBulkRows(
     const base = {
       nim: r.nim || "-",
       nama: r.nama,
+      pa: r.pa,
       p1: r.p1,
       p2: r.p2,
+      paNama: null as string | null,
       p1Nama: null as string | null,
       p2Nama: null as string | null,
     };
@@ -122,11 +139,11 @@ export async function checkBulkRows(
       out.push({ ...base, status: "error", message: "Kolom NIM kosong" });
       continue;
     }
-    if (!r.p1 && !r.p2) {
+    if (!r.pa && !r.p1 && !r.p2) {
       out.push({
         ...base,
         status: "dilewati",
-        message: "Pembimbing tidak diisi",
+        message: "PA dan pembimbing tidak diisi",
       });
       continue;
     }
@@ -158,6 +175,7 @@ export async function checkBulkRows(
       select: {
         id: true,
         stage: true,
+        paId: true,
         pembimbing1Id: true,
         pembimbing2Id: true,
       },
@@ -171,6 +189,15 @@ export async function checkBulkRows(
       continue;
     }
 
+    const pa = r.pa ? findDosen(r.pa) : null;
+    if (r.pa && !pa) {
+      out.push({
+        ...base,
+        status: "error",
+        message: `Dosen PA "${r.pa}" tidak ditemukan (isi NIP atau nama persis)`,
+      });
+      continue;
+    }
     const p1 = r.p1 ? findDosen(r.p1) : null;
     if (r.p1 && !p1) {
       out.push({
@@ -189,15 +216,15 @@ export async function checkBulkRows(
       });
       continue;
     }
-    if (!p1) {
+    if (r.p2 && !r.p1) {
       out.push({
         ...base,
         status: "error",
-        message: "Pembimbing 1 wajib diisi",
+        message: "Pembimbing 1 wajib diisi jika Pembimbing 2 diisi",
       });
       continue;
     }
-    if (p2 && p2.id === p1.id) {
+    if (p1 && p2 && p2.id === p1.id) {
       out.push({
         ...base,
         status: "error",
@@ -206,13 +233,17 @@ export async function checkBulkRows(
       continue;
     }
 
-    base.p1Nama = p1.name;
+    base.paNama = pa?.name ?? null;
+    base.p1Nama = p1?.name ?? null;
     base.p2Nama = p2?.name ?? null;
 
-    if (
-      tesis.pembimbing1Id === p1.id &&
-      (tesis.pembimbing2Id ?? null) === (p2?.id ?? null)
-    ) {
+    const changePa = !!pa && pa.id !== (tesis.paId ?? null);
+    const changePembimbing =
+      !!p1 &&
+      (p1.id !== tesis.pembimbing1Id ||
+        (p2?.id ?? null) !== (tesis.pembimbing2Id ?? null));
+
+    if (!changePa && !changePembimbing) {
       out.push({
         ...base,
         status: "dilewati",
@@ -221,15 +252,21 @@ export async function checkBulkRows(
       continue;
     }
 
+    const parts: string[] = [];
+    if (pa) parts.push(`PA: ${pa.name}`);
+    if (p1) parts.push(`Pembimbing 1: ${p1.name}`);
+    if (p2) parts.push(`Pembimbing 2: ${p2.name}`);
+
     out.push({
       ...base,
       status: "ok",
-      message: `Pembimbing 1: ${p1.name}${p2 ? `, Pembimbing 2: ${p2.name}` : ""}`,
+      message: parts.join(", "),
       tesisId: tesis.id,
       tesisStage: tesis.stage,
       mahasiswaId: mhs.id,
-      p1Id: p1.id,
-      p2Id: p2?.id ?? null,
+      paId: changePa ? pa!.id : null,
+      p1Id: changePembimbing ? p1!.id : null,
+      p2Id: changePembimbing ? (p2?.id ?? null) : null,
     });
   }
   return out;
@@ -240,8 +277,10 @@ export function toClientRow(c: BulkRowCheck) {
   return {
     nim: c.nim,
     nama: c.nama,
+    pa: c.pa,
     p1: c.p1,
     p2: c.p2,
+    paNama: c.paNama,
     p1Nama: c.p1Nama,
     p2Nama: c.p2Nama,
     status: c.status,

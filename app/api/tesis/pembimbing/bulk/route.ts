@@ -10,6 +10,7 @@ const Body = z.object({
       z.object({
         nim: z.string().trim().min(1).max(50),
         nama: z.string().trim().max(200).default(""),
+        pa: z.string().trim().max(200).default(""),
         p1: z.string().trim().max(200).default(""),
         p2: z.string().trim().max(200).default(""),
       }),
@@ -19,7 +20,7 @@ const Body = z.object({
 });
 
 /**
- * Simpan bulk assign Pembimbing 1 & 2 (Kaprodi/Admin) SETELAH user
+ * Simpan bulk assign PA & Pembimbing 1/2 (Kaprodi/Admin) SETELAH user
  * mengonfirmasi preview. Baris divalidasi ulang di server; hanya baris
  * berstatus ok yang disimpan. Bulk upload tidak menerbitkan SK otomatis.
  */
@@ -49,14 +50,22 @@ export async function POST(req: Request) {
 
   let updated = 0;
   for (const c of checks) {
-    if (c.status !== "ok" || !c.tesisId || !c.p1Id || !c.mahasiswaId) continue;
+    if (c.status !== "ok" || !c.tesisId || !c.mahasiswaId) continue;
+    if (!c.paId && !c.p1Id) continue;
 
     await prisma.tesis.update({
       where: { id: c.tesisId },
       data: {
-        pembimbing1Id: c.p1Id,
-        pembimbing2Id: c.p2Id ?? null,
-        ...(c.tesisStage === "JUDUL" ? { stage: "PROPOSAL" as const } : {}),
+        ...(c.paId ? { paId: c.paId } : {}),
+        ...(c.p1Id
+          ? {
+              pembimbing1Id: c.p1Id,
+              pembimbing2Id: c.p2Id ?? null,
+              ...(c.tesisStage === "JUDUL"
+                ? { stage: "PROPOSAL" as const }
+                : {}),
+            }
+          : {}),
       },
     });
 
@@ -64,16 +73,30 @@ export async function POST(req: Request) {
       data: [
         {
           userId: c.mahasiswaId,
-          title: "Pembimbing Ditetapkan",
-          body: `Pembimbing tesis Anda telah ditetapkan. ${c.message}.`,
+          title: "Dosen Pembimbing Diperbarui",
+          body: `Data dosen Anda diperbarui. ${c.message}.`,
           link: "/tesis",
         },
-        {
-          userId: c.p1Id,
-          title: "Penugasan Pembimbing 1",
-          body: `Anda ditetapkan sebagai Pembimbing 1 untuk ${c.nama} (${c.nim}).`,
-          link: "/dashboard",
-        },
+        ...(c.paId
+          ? [
+              {
+                userId: c.paId,
+                title: "Penugasan Pembimbing Akademik (PA)",
+                body: `Anda ditetapkan sebagai PA untuk ${c.nama} (${c.nim}).`,
+                link: "/dashboard",
+              },
+            ]
+          : []),
+        ...(c.p1Id
+          ? [
+              {
+                userId: c.p1Id,
+                title: "Penugasan Pembimbing 1",
+                body: `Anda ditetapkan sebagai Pembimbing 1 untuk ${c.nama} (${c.nim}).`,
+                link: "/dashboard",
+              },
+            ]
+          : []),
         ...(c.p2Id
           ? [
               {
