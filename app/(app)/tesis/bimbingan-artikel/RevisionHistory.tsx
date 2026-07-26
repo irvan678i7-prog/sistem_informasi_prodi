@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { History, ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
-import { previewUrl } from "@/lib/preview";
+import { History, ChevronDown, ChevronUp } from "lucide-react";
+import { PdfPreview } from "./PdfPreview";
 
 export type RevisionItem = {
   id: string;
@@ -12,9 +12,9 @@ export type RevisionItem = {
   uploadedAt: string;
 };
 
-// Riwayat revisi file Word per bagian. Setiap unggahan tersimpan sebagai
-// riwayat sehingga dosen dapat membuka versi lama lewat pratinjau tanpa
-// mengunduh.
+// Riwayat revisi file Word per bagian. Setiap unggahan bisa dipratinjau inline
+// (iframe Office/PDF) maupun dibuka di tab baru — sama seperti berkas terkini,
+// sehingga dosen/mahasiswa tak perlu mengunduh untuk melihat versi lama.
 export function RevisionHistory({ items }: { items: RevisionItem[] }) {
   const [open, setOpen] = useState(false);
   if (items.length === 0) return null;
@@ -35,9 +35,9 @@ export function RevisionHistory({ items }: { items: RevisionItem[] }) {
         )}
       </button>
       {open && (
-        <ul className="space-y-1.5 border-l-2 border-slate-200 pl-2">
+        <ul className="space-y-2 border-l-2 border-slate-200 pl-3">
           {items.map((it) => (
-            <li key={it.id} className="text-[11px] text-slate-600">
+            <li key={it.id} className="text-[11px] text-slate-600 space-y-1">
               <div className="flex items-center gap-1.5 flex-wrap">
                 <span className="font-medium">
                   {it.revision > 0
@@ -45,18 +45,9 @@ export function RevisionHistory({ items }: { items: RevisionItem[] }) {
                     : "Unggahan awal"}
                 </span>
                 <span className="text-slate-400">{it.uploadedAt}</span>
-                <a
-                  href={previewUrl(it.fileUrl, it.fileName)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-0.5 text-brand-700 hover:underline"
-                >
-                  <ExternalLink className="w-3 h-3" /> Lihat
-                </a>
               </div>
-              <p className="truncate max-w-[190px] text-slate-400">
-                {it.fileName}
-              </p>
+              {/* Pratinjau inline + tombol buka, identik dengan berkas terkini */}
+              <PdfPreview url={it.fileUrl} name={it.fileName} />
             </li>
           ))}
         </ul>

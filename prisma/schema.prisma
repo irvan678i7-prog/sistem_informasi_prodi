@@ -261,6 +261,7 @@ model Tesis {
   timeline        RequestTimeline[]
   bimbinganArtikel BimbinganArtikel[]
   bimbinganArtikelFiles BimbinganArtikelFile[]
+  bimbinganArtikelComments BimbinganArtikelComment[]
   seminarBerkas   SeminarBerkas[]
   ujianBerkas     UjianBerkas[]
   // Ceklis TU untuk berkas Seminar Proposal: array boolean per item (ADA / TIDAK ADA).
@@ -322,6 +323,25 @@ model BimbinganArtikelFile {
   createdAt   DateTime @default(now())
 
   @@index([tesisId, section])
+}
+
+// Riwayat komentar/penilaian pembimbing per bagian. Berbeda dengan riwayat
+// FILE (yang dipangkas setelah kedua pembimbing ACC), riwayat komentar ini
+// TIDAK PERNAH dihapus — jadi jejak masukan setiap revisi tetap tersimpan.
+model BimbinganArtikelComment {
+  id         String           @id @default(cuid())
+  tesis      Tesis            @relation(fields: [tesisId], references: [id], onDelete: Cascade)
+  tesisId    String
+  section    BimbinganSection
+  peran      String           // "P1" atau "P2"
+  dosenId    String?
+  dosenName  String
+  severity   RevisiSeverity?
+  note       String?
+  approved   Boolean          @default(false)
+  createdAt  DateTime         @default(now())
+
+  @@index([tesisId, section, createdAt])
 }
 
 model SeminarProposal {

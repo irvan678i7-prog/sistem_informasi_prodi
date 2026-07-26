@@ -36,6 +36,17 @@ export function sectionLabel(section: BimbinganSection): string {
   );
 }
 
+export type ArtikelCommentRow = {
+  id: string;
+  section: BimbinganSection;
+  peran: string;
+  dosenName: string;
+  severity: RevisiSeverity | null;
+  note: string | null;
+  approved: boolean;
+  createdAt: Date;
+};
+
 // Load all eight sections for a tesis, creating any missing rows so the
 // worksheet is always complete. Returns rows ordered 1..8, each with its
 // full upload (revision) history.
@@ -74,11 +85,46 @@ export async function getBimbinganArtikel(tesisId: string) {
     else historyBySection.set(f.section, [f]);
   }
 
+  // Riwayat komentar/penilaian pembimbing (TIDAK dipangkas walau sudah ACC).
+  // Di-guard try/catch supaya halaman tetap terbuka jika tabel baru belum
+  // di-migrasi di database.
+  let comments: ArtikelCommentRow[] = [];
+  try {
+    comments = await prisma.bimbinganArtikelComment.findMany({
+      where: { tesisId },
+      orderBy: { createdAt: "asc" },
+      select: {
+        id: true,
+        section: true,
+        peran: true,
+        dosenName: true,
+        severity: true,
+        note: true,
+        approved: true,
+        createdAt: true,
+      },
+    });
+  } catch (e) {
+    console.error("[bimbinganArtikel] tabel komentar belum tersedia:", e);
+  }
+  const commentsBySection = new Map<
+    BimbinganSection,
+    { p1: ArtikelCommentRow[]; p2: ArtikelCommentRow[] }
+  >();
+  for (const meta of BIMBINGAN_SECTIONS)
+    commentsBySection.set(meta.section, { p1: [], p2: [] });
+  for (const c of comments) {
+    const bucket = commentsBySection.get(c.section);
+    if (!bucket) continue;
+    (c.peran === "P2" ? bucket.p2 : bucket.p1).push(c);
+  }
+
   // Return in canonical 1..8 order.
   return BIMBINGAN_SECTIONS.map((meta) => ({
     meta,
     row: bySection.get(meta.section)!,
     history: historyBySection.get(meta.section) ?? [],
+    comments: commentsBySection.get(meta.section) ?? { p1: [], p2: [] },
   }));
 }
 

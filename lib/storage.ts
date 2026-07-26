@@ -63,3 +63,31 @@ export async function getSignedUrl(
   }
   return data.signedUrl;
 }
+
+/**
+ * Best-effort: hapus objek Storage berdasarkan public URL-nya. Dipakai saat
+ * memangkas riwayat berkas (mis. setelah kedua pembimbing meng-ACC bagian,
+ * hanya 1 berkas final yang disimpan). Path storage diambil dari bagian
+ * setelah "/object/public/<bucket>/" pada URL publik Supabase. Aman dipanggil
+ * dengan URL yang formatnya tak dikenal — URL seperti itu dilewati.
+ */
+export async function deletePublicUrls(urls: string[]): Promise<void> {
+  const clean = urls.filter((u) => typeof u === "string" && u.length > 0);
+  if (clean.length === 0) return;
+  const supabase = getSupabaseAdmin();
+  const marker = `/storage/v1/object/public/${STORAGE_BUCKET}/`;
+  const paths = clean
+    .map((u) => {
+      const i = u.indexOf(marker);
+      if (i < 0) return null;
+      const raw = u.slice(i + marker.length).split("?")[0];
+      try {
+        return decodeURIComponent(raw);
+      } catch {
+        return raw;
+      }
+    })
+    .filter((p): p is string => !!p);
+  if (paths.length === 0) return;
+  await supabase.storage.from(STORAGE_BUCKET).remove(paths);
+}

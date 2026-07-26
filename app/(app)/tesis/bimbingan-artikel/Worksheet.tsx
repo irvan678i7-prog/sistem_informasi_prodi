@@ -5,6 +5,7 @@ import type { BimbinganArtikelRows } from "@/lib/bimbinganArtikel";
 import type { RevisiSeverity } from "@prisma/client";
 import { PdfPreview } from "./PdfPreview";
 import { RevisionHistory } from "./RevisionHistory";
+import { CommentHistory } from "./CommentHistory";
 import { SectionUpload } from "./SectionUpload";
 import { SectionReview } from "./SectionReview";
 
@@ -74,7 +75,7 @@ export function Worksheet({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
-              {rows.map(({ meta, row, history }) => (
+              {rows.map(({ meta, row, history, comments }) => (
                 <tr key={meta.section} className="align-top">
                   <td className="px-3 py-3 text-slate-500">{meta.no}</td>
                   <td className="px-3 py-3 font-medium text-slate-900">
@@ -97,6 +98,16 @@ export function Worksheet({
                         reviewedAt={row.p1ReviewedAt}
                       />
                     )}
+                    <CommentHistory
+                      items={comments.p1.map((c) => ({
+                        id: c.id,
+                        dosenName: c.dosenName,
+                        severity: c.severity,
+                        note: c.note ?? "",
+                        at: formatDate(c.createdAt),
+                        approved: c.approved,
+                      }))}
+                    />
                   </td>
 
                   {/* Kolom Pembimbing 2 */}
@@ -115,6 +126,16 @@ export function Worksheet({
                         reviewedAt={row.p2ReviewedAt}
                       />
                     )}
+                    <CommentHistory
+                      items={comments.p2.map((c) => ({
+                        id: c.id,
+                        dosenName: c.dosenName,
+                        severity: c.severity,
+                        note: c.note ?? "",
+                        at: formatDate(c.createdAt),
+                        approved: c.approved,
+                      }))}
+                    />
                   </td>
 
                   {/* Berkas mahasiswa + pratinjau (Word dirender inline) */}
