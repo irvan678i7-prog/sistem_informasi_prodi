@@ -12,6 +12,7 @@ import {
   EmptyState,
 } from "./shared";
 import { StageProgress } from "./StageProgress";
+import { DonutChart } from "@/components/charts/DonutChart";
 import type { Role } from "@prisma/client";
 
 type User = {
@@ -19,6 +20,18 @@ type User = {
   role: Role;
   nimNip: string;
   prodi?: { name: string } | null;
+};
+
+// Label & warna per tahap untuk diagram donut sebaran tesis.
+const STAGE_META: Record<string, { label: string; color: string }> = {
+  JUDUL: { label: "Pengajuan Judul", color: "#6366f1" },
+  PROPOSAL: { label: "Proposal", color: "#0ea5e9" },
+  SEMINAR_PROPOSAL: { label: "Seminar Proposal", color: "#06b6d4" },
+  BIMBINGAN: { label: "Bimbingan", color: "#14b8a6" },
+  KUT: { label: "Kelayakan Ujian", color: "#f59e0b" },
+  SIDANG: { label: "Sidang", color: "#8b5cf6" },
+  REVISI: { label: "Revisi", color: "#f43f5e" },
+  SELESAI: { label: "Selesai", color: "#22c55e" },
 };
 
 export function KaprodiDashboard({
@@ -34,6 +47,11 @@ export function KaprodiDashboard({
     data;
   const selesai =
     stageCounts.find((s) => s.stage === "SELESAI")?.count ?? 0;
+  const stageSegments = stageCounts.map((s) => ({
+    label: STAGE_META[s.stage]?.label ?? s.stage,
+    value: s.count,
+    color: STAGE_META[s.stage]?.color ?? "#94a3b8",
+  }));
 
   return (
     <div className="space-y-6">
@@ -71,7 +89,16 @@ export function KaprodiDashboard({
           title="Ringkasan Progres Tesis"
           description="Sebaran tahap tesis mahasiswa di prodi Anda"
         >
-          <StageProgress counts={stageCounts} />
+          {tesisTotal === 0 ? (
+            <StageProgress counts={stageCounts} />
+          ) : (
+            <div className="space-y-5">
+              <DonutChart segments={stageSegments} centerLabel="Total Tesis" />
+              <div className="border-t border-slate-100 pt-4">
+                <StageProgress counts={stageCounts} />
+              </div>
+            </div>
+          )}
         </SectionCard>
 
         <SectionCard

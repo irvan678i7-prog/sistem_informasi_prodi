@@ -21,7 +21,13 @@ import { StageBadge } from "@/components/ui/status-badge";
 import { formatDate, formatDateTime } from "@/lib/utils";
 import type { MahasiswaDashboardData } from "@/lib/dashboard";
 import { DashboardHero, StatCard, SectionCard, EmptyState } from "./shared";
-import { KUT_CHECKLIST_ITEMS, parseKutChecklist } from "@/lib/kutChecklist";
+import { StageStepper } from "@/components/StageStepper";
+import {
+  CHECKLIST_CONFIG,
+  parseChecklist,
+  parseChecklistApproval,
+} from "@/lib/checklist";
+import { Download } from "lucide-react";
 import type { Role } from "@prisma/client";
 
 type User = {
@@ -40,10 +46,15 @@ export function MahasiswaDashboard({
 }) {
   const { tesis, unreadNotif, letterCount, pendingBimbingan } = data;
 
-  const checklist = parseKutChecklist(tesis?.kut?.checklist);
+  // Ceklis berkas Ujian Tesis diisi TU; mahasiswa mengunggah berkasnya lalu
+  // mengunduh dokumen tersahkan setelah TU meng-ACC.
+  const ujianItems = CHECKLIST_CONFIG.ujian.items;
+  const checklist = parseChecklist(tesis?.ujianChecklist, "ujian");
   const checklistDone = checklist.filter(Boolean).length;
-  const checklistTotal = KUT_CHECKLIST_ITEMS.length;
+  const checklistTotal = ujianItems.length;
   const checklistPct = Math.round((checklistDone / checklistTotal) * 100);
+  const ujianApprovedCode =
+    parseChecklistApproval(tesis?.checklistApproval).ujian?.code ?? null;
 
   return (
     <div className="space-y-6">
@@ -59,27 +70,40 @@ export function MahasiswaDashboard({
           icon={GraduationCap}
           label="Tahap Tesis"
           value={tesis ? tesis.stage.replace(/_/g, " ") : "Belum mulai"}
+          accent="brand"
           href="/tesis"
         />
         <StatCard
           icon={ClipboardList}
           label="Bimbingan Menunggu Paraf"
           value={pendingBimbingan}
+          accent="amber"
           href="/tesis/bimbingan"
         />
         <StatCard
           icon={Mail}
           label="Surat Saya"
           value={letterCount}
+          accent="sky"
           href="/surat"
         />
         <StatCard
           icon={Bell}
           label="Notifikasi Baru"
           value={unreadNotif}
+          accent="violet"
           href="/notifikasi"
         />
       </div>
+
+      {tesis && (
+        <SectionCard
+          title="Perjalanan Tesis"
+          description="Posisi Anda pada alur tesis PPs UM Metro"
+        >
+          <StageStepper current={tesis.stage} />
+        </SectionCard>
+      )}
 
       <div className="grid lg:grid-cols-2 gap-4">
         {/* Upload area */}
@@ -108,10 +132,16 @@ export function MahasiswaDashboard({
                 desc="Unggah hasil revisi"
               />
               <UploadLink
-                href="/tesis/seminar"
+                href="/tesis/seminar-proposal"
                 icon={FileText}
-                title="Proposal & Seminar"
-                desc="Berkas seminar proposal"
+                title="Berkas Seminar Proposal"
+                desc="Unggah & kirim ke TU"
+              />
+              <UploadLink
+                href="/tesis/ujian-berkas"
+                icon={ClipboardList}
+                title="Berkas Ujian Tesis"
+                desc="Unggah & kirim ke TU"
               />
               <UploadLink
                 href="/surat/baru"
@@ -198,14 +228,29 @@ export function MahasiswaDashboard({
       {/* Checklist berkas syarat ujian tesis (format resmi, 14 item) */}
       <SectionCard
         title="Kelengkapan Berkas Syarat Ujian Tesis"
-        description="Daftar 14 berkas yang wajib disiapkan untuk mendaftar ujian tesis"
+        description="Unggah berkas lalu kirim ke TU. Ceklis di bawah mengikuti hasil pemeriksaan TU."
         action={
-          <Link href="/tesis/kut" className="btn-ghost text-sm">
-            Kelola di KUT
+          <Link href="/tesis/ujian-berkas" className="btn-ghost text-sm">
+            Kelola / Unggah
           </Link>
         }
       >
         <div className="space-y-4">
+          {ujianApprovedCode && (
+            <a
+              href={`/cetak/ceklis/ujian/${tesis?.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-between gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm"
+            >
+              <span className="text-emerald-800 font-medium">
+                Ceklis sudah disahkan TU — dokumen resmi siap diunduh.
+              </span>
+              <span className="inline-flex items-center gap-1 text-emerald-700 font-semibold shrink-0">
+                <Download className="w-4 h-4" /> Unduh
+              </span>
+            </a>
+          )}
           {/* Ringkasan progres */}
           <div className="flex items-center gap-4">
             <div className="flex-1">
@@ -235,7 +280,7 @@ export function MahasiswaDashboard({
 
           {/* Daftar berkas dua kolom */}
           <ol className="grid md:grid-cols-2 gap-x-6 gap-y-1.5">
-            {KUT_CHECKLIST_ITEMS.map((item, i) => {
+            {ujianItems.map((item, i) => {
               const ada = checklist[i];
               return (
                 <li

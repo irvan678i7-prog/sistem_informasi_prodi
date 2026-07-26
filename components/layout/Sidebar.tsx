@@ -53,11 +53,25 @@ const NAV: NavItem[] = [
     icon: ClipboardList,
     roles: ["MAHASISWA"],
   },
+  // Check list berkas syarat + form upload untuk mendaftar Ujian Tesis.
+  {
+    href: "/tesis/ujian-berkas",
+    label: "Berkas Ujian Tesis",
+    icon: FileText,
+    roles: ["MAHASISWA"],
+  },
   // Halaman TU: cek kelengkapan berkas Seminar Proposal mahasiswa.
   {
     href: "/tu/seminar-berkas",
     label: "Cek Berkas Seminar",
     icon: ClipboardList,
+    roles: ["TU"],
+  },
+  // Halaman TU: cek kelengkapan berkas Ujian Tesis mahasiswa.
+  {
+    href: "/tu/ujian-berkas",
+    label: "Cek Berkas Ujian",
+    icon: FileText,
     roles: ["TU"],
   },
   {
