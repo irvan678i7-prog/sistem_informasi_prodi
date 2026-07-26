@@ -19,9 +19,10 @@ export default async function TesisIndexPage() {
     const tesis = await prisma.tesis.findUnique({
       where: { mahasiswaId: user.id },
       include: {
-        pa: true,
-        pembimbing1: true,
-        pembimbing2: true,
+        // hanya nama dosen yang dipakai UI — jangan tarik seluruh User (hash).
+        pa: { select: { name: true } },
+        pembimbing1: { select: { name: true } },
+        pembimbing2: { select: { name: true } },
         sidang: true,
         kut: true,
         seminars: { orderBy: { createdAt: "desc" }, take: 1 },
@@ -198,7 +199,12 @@ export default async function TesisIndexPage() {
           : {};
   const list = await prisma.tesis.findMany({
     where,
-    include: { mahasiswa: { include: { prodi: true } }, kut: true },
+    include: {
+      mahasiswa: {
+        select: { name: true, nimNip: true, prodi: { select: { code: true } } },
+      },
+      kut: { select: { status: true } },
+    },
     orderBy: { updatedAt: "desc" },
     take: 100,
   });

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 
@@ -80,27 +81,32 @@ export async function POST(
 
   const previousPaId = tesis.paId;
 
-  await prisma.tesis.update({
-    where: { id },
-    data: {
-      paId: parsed.paId,
-      timeline: {
-        create: {
-          stage: "PA_ASSIGN",
-          note: paUser ? `PA: ${paUser.name}` : "PA dilepas",
-          actorId: session.uid,
+  // Kedua penulisan (Tesis.paId & MahasiswaProfile.paId) dijalankan dalam SATU
+  // transaksi supaya tidak bisa berakhir setengah jalan (data PA tidak sinkron).
+  const writes: Prisma.PrismaPromise<unknown>[] = [
+    prisma.tesis.update({
+      where: { id },
+      data: {
+        paId: parsed.paId,
+        timeline: {
+          create: {
+            stage: "PA_ASSIGN",
+            note: paUser ? `PA: ${paUser.name}` : "PA dilepas",
+            actorId: session.uid,
+          },
         },
       },
-    },
-  });
-
-  // Update juga MahasiswaProfile.paId supaya konsisten.
+    }),
+  ];
   if (tesis.mahasiswa.mahasiswaProfile) {
-    await prisma.mahasiswaProfile.update({
-      where: { id: tesis.mahasiswa.mahasiswaProfile.id },
-      data: { paId: parsed.paId },
-    });
+    writes.push(
+      prisma.mahasiswaProfile.update({
+        where: { id: tesis.mahasiswa.mahasiswaProfile.id },
+        data: { paId: parsed.paId },
+      }),
+    );
   }
+  await prisma.$transaction(writes);
 
   // Notifikasi ke mahasiswa & dosen PA baru / lama.
   const notifs: Array<{

@@ -123,6 +123,38 @@ export async function checkBulkRows(
     );
   };
 
+  // Ambil SEMUA mahasiswa & tesis terkait dalam 2 query batch (bukan 2 query
+  // per baris di dalam loop). Untuk 500 baris, ini memangkas ~1000 query
+  // berurutan menjadi 3 total — mencegah timeout di serverless + pgbouncer.
+  const nims = Array.from(
+    new Set(rows.map((r) => r.nim).filter((v) => !!v)),
+  );
+  const mahasiswaList = nims.length
+    ? await prisma.user.findMany({
+        where: { nimNip: { in: nims } },
+        select: { id: true, name: true, prodiId: true, role: true, nimNip: true },
+      })
+    : [];
+  const mhsByNim = new Map(mahasiswaList.map((m) => [m.nimNip, m]));
+
+  const mhsIds = mahasiswaList
+    .filter((m) => m.role === "MAHASISWA")
+    .map((m) => m.id);
+  const tesisList = mhsIds.length
+    ? await prisma.tesis.findMany({
+        where: { mahasiswaId: { in: mhsIds } },
+        select: {
+          id: true,
+          stage: true,
+          paId: true,
+          pembimbing1Id: true,
+          pembimbing2Id: true,
+          mahasiswaId: true,
+        },
+      })
+    : [];
+  const tesisByMhsId = new Map(tesisList.map((t) => [t.mahasiswaId, t]));
+
   const out: BulkRowCheck[] = [];
   for (const r of rows) {
     const base = {
@@ -148,10 +180,7 @@ export async function checkBulkRows(
       continue;
     }
 
-    const mhs = await prisma.user.findUnique({
-      where: { nimNip: r.nim },
-      select: { id: true, name: true, prodiId: true, role: true },
-    });
+    const mhs = mhsByNim.get(r.nim) ?? null;
     if (!mhs || mhs.role !== "MAHASISWA") {
       out.push({
         ...base,
@@ -170,16 +199,7 @@ export async function checkBulkRows(
       continue;
     }
 
-    const tesis = await prisma.tesis.findUnique({
-      where: { mahasiswaId: mhs.id },
-      select: {
-        id: true,
-        stage: true,
-        paId: true,
-        pembimbing1Id: true,
-        pembimbing2Id: true,
-      },
-    });
+    const tesis = tesisByMhsId.get(mhs.id) ?? null;
     if (!tesis) {
       out.push({
         ...base,

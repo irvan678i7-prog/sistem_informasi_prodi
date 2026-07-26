@@ -20,6 +20,22 @@ export async function POST(req: Request) {
   if (!tesisId || !(file instanceof File))
     return NextResponse.json({ message: "Body tidak valid" }, { status: 400 });
 
+  // Validasi tipe file (dokumen revisi) — selaras dengan handler upload lain.
+  // Sebelumnya route ini hanya mengecek ukuran, sehingga file apa pun (mis.
+  // HTML/SVG) bisa diunggah dan disimpan di bucket publik.
+  const ALLOWED = [
+    "application/pdf",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ];
+  const nameLower = file.name.toLowerCase();
+  const extOk = /\.(pdf|docx?)$/.test(nameLower);
+  if (!ALLOWED.includes(file.type) || !extOk)
+    return NextResponse.json(
+      { message: "Format harus PDF atau Word (.pdf/.doc/.docx)" },
+      { status: 400 },
+    );
+
   if (file.size > MAX_UPLOAD_BYTES)
     return NextResponse.json(
       { message: `Ukuran file melebihi batas maksimal ${MAX_UPLOAD_LABEL}` },

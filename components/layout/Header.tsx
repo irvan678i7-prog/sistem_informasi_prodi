@@ -1,5 +1,5 @@
-"use client";
-
+// Header tidak memakai hook browser apa pun (hanya Link + form POST logout),
+// jadi biarkan sebagai Server Component agar tidak menambah bundle JS klien.
 import Link from "next/link";
 import { Bell, LogOut, User as UserIcon } from "lucide-react";
 import type { Role } from "@prisma/client";

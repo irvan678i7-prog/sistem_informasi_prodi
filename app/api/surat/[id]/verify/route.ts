@@ -15,9 +15,24 @@ export async function POST(
   const { id } = await ctx.params;
   const letter = await prisma.letterRequest.findUnique({
     where: { id },
-    include: { mahasiswa: true },
+    include: { mahasiswa: { select: { prodiId: true } } },
   });
   if (!letter) return NextResponse.json({ message: "Tidak ditemukan" }, { status: 404 });
+
+  // Batasi lintas-prodi: pemroses (DOSEN/KAPRODI) hanya boleh memverifikasi
+  // surat mahasiswa dari prodinya sendiri.
+  if (session.role !== "ADMIN") {
+    const me = await prisma.user.findUnique({
+      where: { id: session.uid },
+      select: { prodiId: true },
+    });
+    if (!me?.prodiId || me.prodiId !== letter.mahasiswa.prodiId)
+      return NextResponse.json(
+        { message: "Surat ini bukan dari prodi Anda" },
+        { status: 403 },
+      );
+  }
+
   if (letter.status !== "SUBMITTED")
     return NextResponse.json({ message: "Status tidak sesuai" }, { status: 400 });
 

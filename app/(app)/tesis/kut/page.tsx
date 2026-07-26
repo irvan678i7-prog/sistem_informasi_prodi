@@ -22,7 +22,11 @@ export default async function KutPage() {
   if (user.role === "MAHASISWA") {
     const tesis = await prisma.tesis.findUnique({
       where: { mahasiswaId: user.id },
-      include: { kut: true, pembimbing1: true, pembimbing2: true },
+      include: {
+        kut: true,
+        pembimbing1: { select: { name: true } },
+        pembimbing2: { select: { name: true } },
+      },
     });
     if (!tesis) redirect("/tesis");
 
@@ -116,13 +120,20 @@ export default async function KutPage() {
     include: {
       tesis: {
         include: {
-          mahasiswa: { include: { prodi: true } },
-          pembimbing1: true,
-          pembimbing2: true,
+          mahasiswa: {
+            select: {
+              name: true,
+              nimNip: true,
+              prodi: { select: { name: true } },
+            },
+          },
+          pembimbing1: { select: { name: true } },
+          pembimbing2: { select: { name: true } },
         },
       },
     },
     orderBy: { createdAt: "desc" },
+    take: 100,
   });
 
   return (

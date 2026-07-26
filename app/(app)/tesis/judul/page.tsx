@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/card";
 import { Alert } from "@/components/ui/alert";
 import { JudulStatusBadge } from "@/components/ui/status-badge";
-import { getJudulComments } from "@/lib/judul";
+import { getJudulComments, getJudulCommentsBatch } from "@/lib/judul";
 import { JudulForm } from "./JudulForm";
 import { JudulAction } from "./JudulAction";
 import { JudulComments } from "./JudulComments";
@@ -23,7 +23,7 @@ export default async function PengajuanJudulPage() {
   if (user.role === "MAHASISWA") {
     const tesis = await prisma.tesis.findUnique({
       where: { mahasiswaId: user.id },
-      include: { pa: true },
+      include: { pa: { select: { name: true } } },
     });
 
     const comments = tesis ? await getJudulComments(tesis.id) : [];
@@ -35,6 +35,7 @@ export default async function PengajuanJudulPage() {
             prodiId: user.prodiId,
             role: { in: ["DOSEN", "KAPRODI"] },
           },
+          select: { id: true, name: true },
           orderBy: { name: "asc" },
         })
       : [];
@@ -176,8 +177,17 @@ export default async function PengajuanJudulPage() {
         ...(user.role === "ADMIN" ? {} : { paId: user.id }),
         judulStatus: "SUBMITTED",
       },
-      include: { mahasiswa: { include: { prodi: true } } },
+      include: {
+        mahasiswa: {
+          select: {
+            name: true,
+            nimNip: true,
+            prodi: { select: { name: true } },
+          },
+        },
+      },
       orderBy: { updatedAt: "desc" },
+      take: 200,
     });
 
     // Kaprodi queue: tesis di prodi user, status VERIFIED (sudah disetujui PA, menunggu finalisasi).
@@ -191,10 +201,17 @@ export default async function PengajuanJudulPage() {
                 : {}),
             },
             include: {
-              mahasiswa: { include: { prodi: true } },
+              mahasiswa: {
+                select: {
+                  name: true,
+                  nimNip: true,
+                  prodi: { select: { name: true } },
+                },
+              },
               pa: { select: { name: true } },
             },
             orderBy: { updatedAt: "desc" },
+            take: 200,
           })
         : [];
 
@@ -203,13 +220,8 @@ export default async function PengajuanJudulPage() {
       ...paItems.map((t) => t.id),
       ...kaprodiItems.map((t) => t.id),
     ];
-    const commentsByTesis = new Map(
-      await Promise.all(
-        visibleIds.map(
-          async (tid) => [tid, await getJudulComments(tid)] as const,
-        ),
-      ),
-    );
+    // Satu batch (2 query) alih-alih 2×N query di dalam Promise.all.
+    const commentsByTesis = await getJudulCommentsBatch(visibleIds);
 
     return (
       <div className="max-w-4xl mx-auto space-y-6">

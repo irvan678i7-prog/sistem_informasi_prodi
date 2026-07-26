@@ -28,9 +28,27 @@ export async function POST(
 
   const sidang = await prisma.sidangTesis.findUnique({
     where: { id },
-    include: { tesis: true },
+    include: { tesis: true, penguji: { select: { dosenId: true } } },
   });
   if (!sidang) return NextResponse.json({ message: "Tidak ditemukan" }, { status: 404 });
+
+  // Cek KEPEMILIKAN: hanya penguji sidang ini, pembimbing tesis, Kaprodi, atau
+  // Admin yang boleh merekam hasil. Tanpa ini, dosen mana pun bisa menetapkan
+  // LULUS/TIDAK_LULUS + nilai untuk mahasiswa siapa pun.
+  const isPenguji = sidang.penguji.some((p) => p.dosenId === session.uid);
+  const isPembimbing =
+    session.uid === sidang.tesis.pembimbing1Id ||
+    session.uid === sidang.tesis.pembimbing2Id;
+  if (
+    !isPenguji &&
+    !isPembimbing &&
+    session.role !== "KAPRODI" &&
+    session.role !== "ADMIN"
+  )
+    return NextResponse.json(
+      { message: "Anda bukan penguji/pembimbing sidang ini" },
+      { status: 403 },
+    );
 
   const parsedNilai = Number.parseFloat(nilaiText.replace(",", "."));
   await prisma.sidangTesis.update({

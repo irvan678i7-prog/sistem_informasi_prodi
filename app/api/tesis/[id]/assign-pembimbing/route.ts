@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { signDocument } from "@/lib/sign";
+import { nextSequence } from "@/lib/sequence";
 import { generateLetterNumber } from "@/lib/utils";
 
 const Body = z.object({
@@ -110,11 +111,15 @@ export async function POST(
     }
     nomor = manualNomor;
   } else {
-    const yearStart = new Date(new Date().getFullYear(), 0, 1);
+    const year = new Date().getFullYear();
+    const yearStart = new Date(year, 0, 1);
     const count = await prisma.signedDocument.count({
       where: { kind: "SK_PEMBIMBING", signedAt: { gte: yearStart } },
     });
-    nomor = generateLetterNumber(count + 1, "II.3.AU/SK.PPs");
+    // Counter atomik untuk mencegah nomor SK kembar saat dua penetapan
+    // pembimbing terjadi bersamaan. Fallback ke count+1 bila counter gagal.
+    const seq = (await nextSequence(`sk_pembimbing:${year}`, count)) ?? count + 1;
+    nomor = generateLetterNumber(seq, "II.3.AU/SK.PPs");
   }
 
   const doc = await signDocument({

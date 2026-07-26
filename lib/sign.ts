@@ -8,9 +8,34 @@ export function makeDocumentCode(): string {
   return crypto.randomBytes(8).toString("hex").toUpperCase().slice(0, 12);
 }
 
+/**
+ * Serialisasi JSON yang deterministik: kunci objek diurutkan DI SETIAP LEVEL
+ * (rekursif), bukan hanya level teratas.
+ *
+ * CATATAN BUG LAMA: implementasi sebelumnya memakai
+ *   JSON.stringify(payload, Object.keys(payload).sort())
+ * di mana argumen kedua (array) bertindak sebagai FILTER nama properti untuk
+ * SEMUA level. Akibatnya seluruh objek bersarang (mis. `mahasiswa`, `payload`)
+ * ikut terpangkas menjadi `{}` — sehingga hash TIDAK mencakup isi dokumen
+ * (nama, NIM, isi surat) sama sekali. Fungsi di bawah memperbaikinya dengan
+ * mengurutkan kunci secara rekursif tanpa membuang data apa pun.
+ */
+function stableStringify(value: unknown): string {
+  return JSON.stringify(value, (_key, val) => {
+    if (val && typeof val === "object" && !Array.isArray(val)) {
+      return Object.keys(val as Record<string, unknown>)
+        .sort()
+        .reduce<Record<string, unknown>>((acc, k) => {
+          acc[k] = (val as Record<string, unknown>)[k];
+          return acc;
+        }, {});
+    }
+    return val;
+  });
+}
+
 export function computeHash(payload: unknown): string {
-  const json = JSON.stringify(payload, Object.keys(payload as object).sort());
-  return crypto.createHash("sha256").update(json).digest("hex");
+  return crypto.createHash("sha256").update(stableStringify(payload)).digest("hex");
 }
 
 export async function generateQrDataUrl(text: string): Promise<string> {

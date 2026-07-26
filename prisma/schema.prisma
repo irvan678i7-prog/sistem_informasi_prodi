@@ -136,6 +136,10 @@ model User {
 
   bimbinganLogs   BimbinganLog[]  @relation("BimbinganDosen")
   pengujiOf       SidangPenguji[]
+
+  // Query dosen/mahasiswa per prodi & per peran (dashboard, daftar pembimbing).
+  @@index([prodiId, role])
+  @@index([role])
 }
 
 model MahasiswaProfile {
@@ -179,6 +183,11 @@ model LetterRequest {
   timeline      RequestTimeline[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
+
+  // Daftar surat difilter per mahasiswa/handler dan diurutkan per tanggal.
+  @@index([mahasiswaId, createdAt(sort: Desc)])
+  @@index([handlerId])
+  @@index([status, createdAt(sort: Desc)])
 }
 
 model RequestTimeline {
@@ -191,6 +200,10 @@ model RequestTimeline {
   note          String?
   actorId       String?
   createdAt     DateTime      @default(now())
+
+  // Timeline judul & surat difilter per tesis/letter + stage.
+  @@index([tesisId, stage])
+  @@index([letterId, createdAt(sort: Desc)])
 }
 
 model Attachment {
@@ -253,6 +266,14 @@ model Tesis {
   seminarChecklist Json?
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
+
+  // FK & kolom filter yang sering dipakai di dashboard/daftar/groupBy stage.
+  @@index([stage])
+  @@index([judulStatus])
+  @@index([paId])
+  @@index([pembimbing1Id])
+  @@index([pembimbing2Id])
+  @@index([pembimbingProposalId])
 }
 
 // Lembar bimbingan artikel/tesis per bagian (1..8). Satu baris per bagian per
@@ -339,6 +360,10 @@ model BimbinganLog {
   attachments   Attachment[]
   approved      Boolean       @default(false)
   createdAt     DateTime      @default(now())
+
+  // Hitung "pending paraf" per dosen & per tesis (dashboard).
+  @@index([tesisId, approved])
+  @@index([dosenId, approved])
 }
 
 model KUT {
@@ -431,6 +456,9 @@ model SignedDocument {
   skSidang        SidangTesis?      @relation("SKSidang")
   undanganSidang  SidangTesis?      @relation("UndanganSidang")
   baSidang        SidangTesis?      @relation("BASidang")
+
+  // Penomoran SK/surat menghitung dokumen per jenis per tahun.
+  @@index([kind, signedAt])
 }
 
 model Notification {
@@ -442,6 +470,11 @@ model Notification {
   link      String?
   readAt    DateTime?
   createdAt DateTime @default(now())
+
+  // Badge "belum dibaca" (count) & daftar notifikasi terbaru per user —
+  // dipanggil di layout pada SETIAP navigasi, jadi wajib ter-index.
+  @@index([userId, readAt])
+  @@index([userId, createdAt(sort: Desc)])
 }
 
 model AuditLog {
@@ -453,6 +486,11 @@ model AuditLog {
   entityId  String?
   metadata  Json?
   createdAt DateTime @default(now())
+
+  // Halaman audit: urut terbaru; detail per entity & per aktor.
+  @@index([createdAt(sort: Desc)])
+  @@index([actorId, createdAt(sort: Desc)])
+  @@index([entity, entityId])
 }
 
 model AppSetting {

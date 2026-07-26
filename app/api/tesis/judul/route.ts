@@ -2,14 +2,21 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { JENIS_PENELITIAN } from "@/lib/jenisPenelitian";
+
+// `jenis` dibatasi ke daftar resmi (Kuantitatif/Kualitatif/Pengembangan/Studi
+// literatur) — sebelumnya string bebas, sehingga nilai sembarang bisa tersimpan.
+const jenisEnum = z.enum(
+  JENIS_PENELITIAN as unknown as [string, ...string[]],
+);
 
 const Body = z.object({
   judul1: z.string().min(5),
   judul2: z.string().min(5),
   judul3: z.string().min(5),
-  jenis1: z.string().min(1),
-  jenis2: z.string().min(1),
-  jenis3: z.string().min(1),
+  jenis1: jenisEnum,
+  jenis2: jenisEnum,
+  jenis3: jenisEnum,
   paId: z.string().min(1),
   track: z.enum(["TESIS", "ARTIKEL"]).default("TESIS"),
 });

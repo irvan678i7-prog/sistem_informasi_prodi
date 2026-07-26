@@ -36,6 +36,21 @@ export async function POST(
   });
   if (!seminar) return NextResponse.json({ message: "Tidak ditemukan" }, { status: 404 });
 
+  // Cek KEPEMILIKAN: hanya dosen yang benar-benar terkait tesis ini
+  // (pembimbing proposal / pembimbing 1 / pembimbing 2), Kaprodi, atau Admin
+  // yang boleh menetapkan hasil seminar. Sebelumnya cukup `isDosen` sehingga
+  // dosen mana pun bisa meluluskan/menggagalkan seminar mahasiswa siapa pun.
+  const t = seminar.tesis;
+  const isPembimbing =
+    session.uid === t.pembimbingProposalId ||
+    session.uid === t.pembimbing1Id ||
+    session.uid === t.pembimbing2Id;
+  if (!isPembimbing && session.role !== "KAPRODI" && session.role !== "ADMIN")
+    return NextResponse.json(
+      { message: "Anda bukan pembimbing/penguji seminar ini" },
+      { status: 403 },
+    );
+
   await prisma.seminarProposal.update({
     where: { id },
     data: { hasil: result },
