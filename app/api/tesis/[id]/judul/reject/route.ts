@@ -14,6 +14,11 @@ export async function POST(
   if (!tesis) return NextResponse.json({ message: "Tidak ditemukan" }, { status: 404 });
   if (tesis.paId !== session.uid && session.role !== "ADMIN")
     return NextResponse.json({ message: "Hanya PA terkait" }, { status: 403 });
+  // Hanya judul yang berstatus SUBMITTED yang boleh ditolak — samakan dengan
+  // handler approve. Tanpa ini, judul yang sudah APPROVED/REJECTED bisa ditolak
+  // ulang, menimbulkan entri timeline & notifikasi ganda.
+  if (tesis.judulStatus !== "SUBMITTED")
+    return NextResponse.json({ message: "Status tidak sesuai" }, { status: 400 });
 
   let reason = "";
   try {

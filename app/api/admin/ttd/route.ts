@@ -5,7 +5,10 @@ import { uploadFileToSupabase } from "@/lib/storage";
 
 export const runtime = "nodejs";
 
-const ALLOWED_MIME = ["image/png", "image/jpeg", "image/webp", "image/svg+xml"];
+// SVG sengaja TIDAK diizinkan: file SVG dapat memuat <script> sehingga menjadi
+// vektor stored-XSS ketika ditampilkan sebagai gambar TTD/logo di dokumen &
+// halaman verifikasi. Gunakan format raster saja.
+const ALLOWED_MIME = ["image/png", "image/jpeg", "image/webp"];
 const MAX_SIZE = 2 * 1024 * 1024; // 2 MB
 
 export async function POST(req: Request) {
@@ -29,7 +32,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: "File tidak ada" }, { status: 400 });
   if (!ALLOWED_MIME.includes(file.type))
     return NextResponse.json(
-      { message: "Format harus PNG/JPG/WEBP/SVG" },
+      { message: "Format harus PNG/JPG/WEBP" },
       { status: 400 },
     );
   if (file.size > MAX_SIZE)

@@ -2,7 +2,9 @@ import { Suspense } from "react";
 import { LoginForm } from "./LoginForm";
 import Link from "next/link";
 
-export const dynamic = "force-dynamic";
+// Halaman login hanya berisi form statis (LoginForm sudah client + Suspense).
+// Tanpa `force-dynamic`, Next menyajikannya sebagai shell statis -> TTFB lebih
+// cepat untuk tiap pengunjung.
 
 export default function LoginPage() {
   return (

@@ -112,7 +112,24 @@ export async function POST(req: Request) {
         continue;
       }
 
+      // GUARD KEAMANAN: jangan pernah menimpa akun yang BUKAN mahasiswa.
+      // Bulk upload ini selalu menulis role = MAHASISWA + reset password = NIM.
+      // Jika sebuah NIM/email kebetulan bertabrakan dengan akun DOSEN/KAPRODI/
+      // ADMIN, upsert lama akan menurunkan role-nya jadi mahasiswa dan mereset
+      // passwordnya — jelas berbahaya. Lewati baris seperti itu dengan catatan.
+      if (existing && existing.role !== "MAHASISWA") {
+        skipped += 1;
+        errors.push({
+          row: idx,
+          nim,
+          message: `Dilewati: sudah ada akun non-mahasiswa (role ${existing.role}) dengan NIM/email ini`,
+        });
+        continue;
+      }
+
       // Password awal = NIM (di-hash baru kalau create / kalau upsert).
+      // Catatan: NIM adalah nilai yang mudah ditebak; sarankan pengguna
+      // mengganti password saat login pertama.
       const hashedPassword = await hashPassword(nim);
 
       if (existing) {

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { signDocument } from "@/lib/sign";
+import { nextSequence } from "@/lib/sequence";
 import { generateLetterNumber } from "@/lib/utils";
 
 const Body = z.object({
@@ -34,12 +35,6 @@ export async function POST(
   });
   if (!tesis) return NextResponse.json({ message: "Tidak ditemukan" }, { status: 404 });
 
-  const yearStart = new Date(new Date().getFullYear(), 0, 1);
-  const count = await prisma.signedDocument.count({
-    where: { kind: "SK_PEMBIMBING", signedAt: { gte: yearStart } },
-  });
-  const nomor = generateLetterNumber(count + 1, "II.3.AU/SK.PPs");
-
   const signer = await prisma.user.findUnique({ where: { id: session.uid } });
   if (!signer)
     return NextResponse.json({ message: "Signer tidak valid" }, { status: 400 });
@@ -50,6 +45,33 @@ export async function POST(
       ? prisma.user.findUnique({ where: { id: parsed.pembimbing2Id } })
       : Promise.resolve(null),
   ]);
+
+  // Validasi peran pembimbing (route lama ini sebelumnya tidak mengecek peran,
+  // sehingga user sembarang bisa ditetapkan jadi pembimbing).
+  if (!p1 || !["DOSEN", "KAPRODI"].includes(p1.role))
+    return NextResponse.json(
+      { message: "Pembimbing 1 tidak valid" },
+      { status: 400 },
+    );
+  if (parsed.pembimbing2Id && (!p2 || !["DOSEN", "KAPRODI"].includes(p2.role)))
+    return NextResponse.json(
+      { message: "Pembimbing 2 tidak valid" },
+      { status: 400 },
+    );
+  if (parsed.pembimbing2Id && parsed.pembimbing2Id === parsed.pembimbing1Id)
+    return NextResponse.json(
+      { message: "Pembimbing 1 dan 2 tidak boleh sama" },
+      { status: 400 },
+    );
+
+  const year = new Date().getFullYear();
+  const yearStart = new Date(year, 0, 1);
+  const count = await prisma.signedDocument.count({
+    where: { kind: "SK_PEMBIMBING", signedAt: { gte: yearStart } },
+  });
+  // Counter atomik (lihat lib/sequence.ts) untuk cegah nomor SK kembar.
+  const seq = (await nextSequence(`sk_pembimbing:${year}`, count)) ?? count + 1;
+  const nomor = generateLetterNumber(seq, "II.3.AU/SK.PPs");
 
   const doc = await signDocument({
     kind: "SK_PEMBIMBING",

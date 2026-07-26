@@ -21,11 +21,12 @@ export default async function BimbinganPage() {
   const tesis = await prisma.tesis.findUnique({
     where: { mahasiswaId: user.id },
     include: {
-      pembimbing1: true,
-      pembimbing2: true,
+      pembimbing1: { select: { name: true } },
+      pembimbing2: { select: { name: true } },
       bimbinganLogs: {
         orderBy: { tanggal: "desc" },
-        include: { dosen: true },
+        include: { dosen: { select: { name: true } } },
+        take: 100,
       },
     },
   });
@@ -34,6 +35,7 @@ export default async function BimbinganPage() {
   const dosenList = user.prodiId
     ? await prisma.user.findMany({
         where: { prodiId: user.prodiId, role: { in: ["DOSEN", "KAPRODI"] } },
+        select: { id: true, name: true },
         orderBy: { name: "asc" },
       })
     : [];

@@ -13,6 +13,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { formatDateTime } from "@/lib/utils";
 import { canHandleLetter } from "@/lib/rbac";
 import { Plus } from "lucide-react";
+import type { Prisma } from "@prisma/client";
 
 export default async function SuratIndexPage() {
   const user = await getCurrentUser();
@@ -21,17 +22,30 @@ export default async function SuratIndexPage() {
   const isStaff = canHandleLetter(user.role);
   const isMhs = user.role === "MAHASISWA";
 
-  const where = isMhs
+  // Batasi daftar surat per peran:
+  //  - MAHASISWA  -> hanya surat miliknya
+  //  - ADMIN      -> semua surat
+  //  - KAPRODI/DOSEN/TU -> hanya surat mahasiswa di prodinya
+  //  - staf tanpa prodi -> tidak melihat apa pun (default aman, bukan semua)
+  // Sebelumnya cabang non-mahasiswa jatuh ke `{}` sehingga DOSEN & TU bisa
+  // melihat SELURUH surat lintas prodi (IDOR).
+  const where: Prisma.LetterRequestWhereInput = isMhs
     ? { mahasiswaId: user.id }
-    : user.role === "KAPRODI"
-      ? user.prodiId
+    : user.role === "ADMIN"
+      ? {}
+      : user.prodiId
         ? { mahasiswa: { prodiId: user.prodiId } }
-        : {}
-      : {};
+        : { id: "__none__" };
 
   const letters = await prisma.letterRequest.findMany({
     where,
-    include: { mahasiswa: { include: { prodi: true } } },
+    // `select` seperlunya: tanpa ini `include: { mahasiswa: ... }` menarik
+    // seluruh kolom User (termasuk hashedPassword) ke dalam payload halaman.
+    include: {
+      mahasiswa: {
+        select: { name: true, nimNip: true, prodi: { select: { code: true } } },
+      },
+    },
     orderBy: { createdAt: "desc" },
     take: 100,
   });

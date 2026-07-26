@@ -29,6 +29,19 @@ export async function POST(req: Request) {
   if (!tesis || tesis.mahasiswaId !== session.uid)
     return NextResponse.json({ message: "Tidak diizinkan" }, { status: 403 });
 
+  // `dosenId` harus salah satu pembimbing tesis ini. Tanpa validasi ini,
+  // mahasiswa dapat mencatat bimbingan atas nama dosen sembarang DAN mengirim
+  // notifikasi (spam) ke user ID mana pun karena `notification.userId` diisi
+  // langsung dari `dosenId`.
+  if (
+    parsed.dosenId !== tesis.pembimbing1Id &&
+    parsed.dosenId !== tesis.pembimbing2Id
+  )
+    return NextResponse.json(
+      { message: "Dosen yang dipilih bukan pembimbing tesis Anda" },
+      { status: 400 },
+    );
+
   const tanggal = new Date(parsed.tanggal);
   if (Number.isNaN(tanggal.getTime()))
     return NextResponse.json({ message: "Tanggal tidak valid" }, { status: 400 });

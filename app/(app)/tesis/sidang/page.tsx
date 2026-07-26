@@ -22,7 +22,11 @@ export default async function SidangPage() {
     const tesis = await prisma.tesis.findUnique({
       where: { mahasiswaId: user.id },
       include: {
-        sidang: { include: { penguji: { include: { dosen: true } } } },
+        sidang: {
+          include: {
+            penguji: { include: { dosen: { select: { name: true } } } },
+          },
+        },
         kut: true,
       },
     });
@@ -107,8 +111,18 @@ export default async function SidangPage() {
   // Staff
   const list = await prisma.sidangTesis.findMany({
     include: {
-      tesis: { include: { mahasiswa: { include: { prodi: true } } } },
-      penguji: { include: { dosen: true } },
+      tesis: {
+        include: {
+          mahasiswa: {
+            select: {
+              name: true,
+              nimNip: true,
+              prodi: { select: { name: true } },
+            },
+          },
+        },
+      },
+      penguji: { include: { dosen: { select: { name: true } } } },
     },
     orderBy: { jadwal: "desc" },
     take: 50,

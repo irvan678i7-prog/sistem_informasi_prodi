@@ -31,14 +31,21 @@ export default async function ManagePembimbingPage() {
     where,
     include: {
       mahasiswa: {
-        include: { prodi: true, mahasiswaProfile: true },
+        select: {
+          name: true,
+          nimNip: true,
+          prodi: { select: { name: true } },
+          mahasiswaProfile: { select: { angkatan: true, semester: true } },
+        },
       },
-      pa: true,
-      pembimbing1: true,
-      pembimbing2: true,
+      // hanya nama dosen yang ditampilkan — hindari membawa hashedPassword.
+      pa: { select: { name: true } },
+      pembimbing1: { select: { name: true } },
+      pembimbing2: { select: { name: true } },
       skBimbinganDoc: { select: { code: true, nomor: true } },
     },
     orderBy: [{ updatedAt: "desc" }],
+    take: 300,
   });
 
   const dosenList =
@@ -49,6 +56,7 @@ export default async function ManagePembimbingPage() {
             role: { in: ["DOSEN", "KAPRODI"] },
             isActive: true,
           },
+          select: { id: true, name: true },
           orderBy: { name: "asc" },
         })
       : await prisma.user.findMany({
@@ -56,6 +64,7 @@ export default async function ManagePembimbingPage() {
             role: { in: ["DOSEN", "KAPRODI"] },
             isActive: true,
           },
+          select: { id: true, name: true },
           orderBy: { name: "asc" },
         });
 

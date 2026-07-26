@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { canApproveLetter } from "@/lib/rbac";
 import { signDocument } from "@/lib/sign";
+import { nextSequence } from "@/lib/sequence";
 import { generateLetterNumber } from "@/lib/utils";
 
 export async function POST(
@@ -58,7 +59,8 @@ export async function POST(
     }
     nomor = manualNomor;
   } else {
-    const yearStart = new Date(new Date().getFullYear(), 0, 1);
+    const year = new Date().getFullYear();
+    const yearStart = new Date(year, 0, 1);
     const count = await prisma.letterRequest.count({
       where: {
         type: letter.type,
@@ -66,7 +68,11 @@ export async function POST(
         createdAt: { gte: yearStart },
       },
     });
-    nomor = generateLetterNumber(count + 1);
+    // Counter atomik agar dua penandatanganan bersamaan tidak menghasilkan
+    // nomor kembar (nomor LetterRequest bersifat @unique). Fallback ke count+1
+    // bila counter tak tersedia.
+    const seq = (await nextSequence(`surat:${letter.type}:${year}`, count)) ?? count + 1;
+    nomor = generateLetterNumber(seq);
   }
 
   const signer = await prisma.user.findUnique({ where: { id: session.uid } });

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { ROLE_LABEL } from "@/lib/rbac";
+import { computeHash } from "@/lib/sign";
 import { formatDateTime } from "@/lib/utils";
 import { ShieldCheck, ShieldAlert } from "lucide-react";
 
@@ -25,6 +26,13 @@ export default async function VerifyCodePage({
   const doc = await prisma.signedDocument.findUnique({
     where: { code: code.toUpperCase() },
   });
+
+  // Hitung ulang hash dari payload yang tersimpan dan bandingkan dengan hash
+  // yang direkam saat penandatanganan. Jika baris `payload` di database diubah
+  // setelah ditandatangani, kedua nilai TIDAK cocok -> dokumen dianggap
+  // termanipulasi. Tanpa langkah ini, halaman hanya "memercayai" kolom hash
+  // apa adanya sehingga jaminan anti-perubahan menjadi semu.
+  const hashIntact = doc ? computeHash(doc.payload) === doc.hash : false;
 
   return (
     <main className="min-h-screen bg-slate-50 p-6">
@@ -59,6 +67,20 @@ export default async function VerifyCodePage({
               <p className="text-sm text-slate-600 mt-1">
                 Dokumen dengan kode {doc.code} telah dicabut/dibatalkan oleh
                 penerbit.
+              </p>
+            </div>
+          </div>
+        ) : !hashIntact ? (
+          <div className="card mt-3 border-red-300">
+            <div className="card-body py-8">
+              <ShieldAlert className="w-12 h-12 text-red-600 mb-2" />
+              <h1 className="text-xl font-bold text-red-700">
+                Hash tidak cocok — dokumen mungkin diubah
+              </h1>
+              <p className="text-sm text-slate-600 mt-1">
+                Isi dokumen dengan kode {doc.code} tidak sesuai dengan hash yang
+                direkam saat penandatanganan. Jangan anggap dokumen ini sah;
+                hubungi penerbit (PPs UM Metro) untuk verifikasi ulang.
               </p>
             </div>
           </div>
