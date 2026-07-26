@@ -262,8 +262,14 @@ model Tesis {
   bimbinganArtikel BimbinganArtikel[]
   bimbinganArtikelFiles BimbinganArtikelFile[]
   seminarBerkas   SeminarBerkas[]
+  ujianBerkas     UjianBerkas[]
   // Ceklis TU untuk berkas Seminar Proposal: array boolean per item (ADA / TIDAK ADA).
   seminarChecklist Json?
+  // Ceklis TU untuk berkas Ujian Tesis (KUT): array boolean per item.
+  ujianChecklist  Json?
+  // Metadata pengesahan ceklis oleh TU per jenis, mis.
+  // { "seminar": { code, approvedAt, signerName, signerRole }, "ujian": {...} }.
+  checklistApproval Json?
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
@@ -336,6 +342,21 @@ model SeminarProposal {
 // Berkas syarat mendaftar Seminar Proposal (check list 10 item).
 // Satu baris per (tesis, item); unggah ulang menggantikan berkas sebelumnya.
 model SeminarBerkas {
+  id        String   @id @default(cuid())
+  tesis     Tesis    @relation(fields: [tesisId], references: [id], onDelete: Cascade)
+  tesisId   String
+  item      Int
+  fileUrl   String
+  fileName  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tesisId, item])
+}
+
+// Berkas syarat mendaftar Ujian Tesis (check list 14 item), analog dengan
+// SeminarBerkas. Satu baris per (tesis, item); unggah ulang mengganti berkas.
+model UjianBerkas {
   id        String   @id @default(cuid())
   tesis     Tesis    @relation(fields: [tesisId], references: [id], onDelete: Cascade)
   tesisId   String
