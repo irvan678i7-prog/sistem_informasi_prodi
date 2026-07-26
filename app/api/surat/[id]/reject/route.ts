@@ -29,18 +29,18 @@ export async function POST(
   if (letter.status !== "SUBMITTED" && letter.status !== "VERIFIED")
     return NextResponse.json({ message: "Status tidak sesuai" }, { status: 400 });
 
-  // Batasi lintas-prodi (sama seperti verify).
-  if (session.role !== "ADMIN") {
-    const me = await prisma.user.findUnique({
-      where: { id: session.uid },
-      select: { prodiId: true },
-    });
-    if (!me?.prodiId || me.prodiId !== letter.mahasiswa.prodiId)
-      return NextResponse.json(
-        { message: "Surat ini bukan dari prodi Anda" },
-        { status: 403 },
-      );
-  }
+  // Batasi lintas-prodi: pemroses hanya boleh menolak surat mahasiswa dari
+  // prodinya. Hanya DOSEN/KAPRODI yang sampai sini (ADMIN sudah di-block guard
+  // canHandleLetter di atas), jadi pengecekan prodi berlaku untuk semuanya.
+  const me = await prisma.user.findUnique({
+    where: { id: session.uid },
+    select: { prodiId: true },
+  });
+  if (!me?.prodiId || me.prodiId !== letter.mahasiswa.prodiId)
+    return NextResponse.json(
+      { message: "Surat ini bukan dari prodi Anda" },
+      { status: 403 },
+    );
 
   // Surat yang SUDAH diverifikasi hanya boleh ditolak oleh Kaprodi — mencegah
   // dosen biasa membatalkan keputusan verifikasi Kaprodi.

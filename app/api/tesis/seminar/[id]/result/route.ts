@@ -41,11 +41,13 @@ export async function POST(
   // yang boleh menetapkan hasil seminar. Sebelumnya cukup `isDosen` sehingga
   // dosen mana pun bisa meluluskan/menggagalkan seminar mahasiswa siapa pun.
   const t = seminar.tesis;
+  // Hanya DOSEN/KAPRODI yang sampai sini (guard isDosen di atas). Izinkan bila
+  // dosen ybs pembimbing seminar ini, atau berperan KAPRODI.
   const isPembimbing =
     session.uid === t.pembimbingProposalId ||
     session.uid === t.pembimbing1Id ||
     session.uid === t.pembimbing2Id;
-  if (!isPembimbing && session.role !== "KAPRODI" && session.role !== "ADMIN")
+  if (!isPembimbing && session.role !== "KAPRODI")
     return NextResponse.json(
       { message: "Anda bukan pembimbing/penguji seminar ini" },
       { status: 403 },

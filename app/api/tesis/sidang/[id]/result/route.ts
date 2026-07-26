@@ -35,16 +35,13 @@ export async function POST(
   // Cek KEPEMILIKAN: hanya penguji sidang ini, pembimbing tesis, Kaprodi, atau
   // Admin yang boleh merekam hasil. Tanpa ini, dosen mana pun bisa menetapkan
   // LULUS/TIDAK_LULUS + nilai untuk mahasiswa siapa pun.
+  // Hanya DOSEN/KAPRODI yang sampai sini (guard isDosen di atas). Izinkan bila
+  // dosen ybs penguji/pembimbing sidang ini, atau berperan KAPRODI.
   const isPenguji = sidang.penguji.some((p) => p.dosenId === session.uid);
   const isPembimbing =
     session.uid === sidang.tesis.pembimbing1Id ||
     session.uid === sidang.tesis.pembimbing2Id;
-  if (
-    !isPenguji &&
-    !isPembimbing &&
-    session.role !== "KAPRODI" &&
-    session.role !== "ADMIN"
-  )
+  if (!isPenguji && !isPembimbing && session.role !== "KAPRODI")
     return NextResponse.json(
       { message: "Anda bukan penguji/pembimbing sidang ini" },
       { status: 403 },

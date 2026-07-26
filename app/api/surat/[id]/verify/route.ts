@@ -19,19 +19,18 @@ export async function POST(
   });
   if (!letter) return NextResponse.json({ message: "Tidak ditemukan" }, { status: 404 });
 
-  // Batasi lintas-prodi: pemroses (DOSEN/KAPRODI) hanya boleh memverifikasi
-  // surat mahasiswa dari prodinya sendiri.
-  if (session.role !== "ADMIN") {
-    const me = await prisma.user.findUnique({
-      where: { id: session.uid },
-      select: { prodiId: true },
-    });
-    if (!me?.prodiId || me.prodiId !== letter.mahasiswa.prodiId)
-      return NextResponse.json(
-        { message: "Surat ini bukan dari prodi Anda" },
-        { status: 403 },
-      );
-  }
+  // Batasi lintas-prodi: pemroses hanya boleh memverifikasi surat mahasiswa
+  // dari prodinya. Hanya DOSEN/KAPRODI yang sampai sini (ADMIN sudah di-block
+  // guard canHandleLetter di atas), jadi pengecekan prodi berlaku untuk semua.
+  const me = await prisma.user.findUnique({
+    where: { id: session.uid },
+    select: { prodiId: true },
+  });
+  if (!me?.prodiId || me.prodiId !== letter.mahasiswa.prodiId)
+    return NextResponse.json(
+      { message: "Surat ini bukan dari prodi Anda" },
+      { status: 403 },
+    );
 
   if (letter.status !== "SUBMITTED")
     return NextResponse.json({ message: "Status tidak sesuai" }, { status: 400 });
