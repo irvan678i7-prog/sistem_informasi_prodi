@@ -6,7 +6,8 @@ import {
   getDosenDashboard,
   getKaprodiDashboard,
 } from "@/lib/dashboard";
-import { Card, CardBody } from "@/components/ui/card";
+import { ClipboardList, FileText, Bell } from "lucide-react";
+import { DashboardHero, StatCard } from "./_components/shared";
 import { MahasiswaDashboard } from "./_components/MahasiswaDashboard";
 import { DosenDashboard } from "./_components/DosenDashboard";
 import { KaprodiDashboard } from "./_components/KaprodiDashboard";
@@ -49,73 +50,87 @@ export default async function DashboardPage() {
     }
     // Dashboard TU: ringkas saja — fokus ke pemeriksaan berkas Seminar Proposal.
     case "TU": {
-      const [mhsCount, berkasCount, unreadNotif] = await Promise.all([
+      const [seminarMhs, ujianMhs, unreadNotif] = await Promise.all([
         prisma.tesis.count({ where: { seminarBerkas: { some: {} } } }),
-        prisma.seminarBerkas.count(),
+        prisma.tesis.count({ where: { ujianBerkas: { some: {} } } }),
         prisma.notification.count({
           where: { userId: user.id, readAt: null },
         }),
       ]);
       return (
-        <div className="max-w-4xl mx-auto space-y-4">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">
-              Dashboard Tata Usaha
-            </h1>
-            <p className="text-sm text-slate-500">
-              Selamat datang, {user.name}.
-            </p>
+        <div className="space-y-6">
+          <DashboardHero
+            name={user.name}
+            role={user.role}
+            prodiName={user.prodi?.name}
+            nimNip={user.nimNip}
+          />
+          <div className="grid sm:grid-cols-3 gap-4">
+            <StatCard
+              icon={ClipboardList}
+              label="Berkas Seminar Masuk"
+              value={seminarMhs}
+              accent="brand"
+              href="/tu/seminar-berkas"
+            />
+            <StatCard
+              icon={FileText}
+              label="Berkas Ujian Masuk"
+              value={ujianMhs}
+              accent="emerald"
+              href="/tu/ujian-berkas"
+            />
+            <StatCard
+              icon={Bell}
+              label="Notifikasi Baru"
+              value={unreadNotif}
+              accent="amber"
+              href="/notifikasi"
+            />
           </div>
-          <div className="grid sm:grid-cols-3 gap-3">
-            <Card>
-              <CardBody>
-                <p className="text-xs text-slate-500">
-                  Mahasiswa unggah berkas
-                </p>
-                <p className="text-2xl font-bold text-slate-900">{mhsCount}</p>
-              </CardBody>
-            </Card>
-            <Card>
-              <CardBody>
-                <p className="text-xs text-slate-500">Total berkas masuk</p>
-                <p className="text-2xl font-bold text-slate-900">
-                  {berkasCount}
-                </p>
-              </CardBody>
-            </Card>
-            <Card>
-              <CardBody>
-                <p className="text-xs text-slate-500">Notifikasi belum dibaca</p>
-                <p className="text-2xl font-bold text-slate-900">
-                  {unreadNotif}
-                </p>
-              </CardBody>
-            </Card>
+          <div className="flex flex-wrap gap-2">
+            <Link href="/tu/seminar-berkas" className="btn-primary">
+              Cek Berkas Seminar Proposal
+            </Link>
+            <Link href="/tu/ujian-berkas" className="btn-secondary">
+              Cek Berkas Ujian Tesis
+            </Link>
           </div>
-          <Link
-            href="/tu/seminar-berkas"
-            className="inline-flex items-center gap-1.5 rounded-md bg-brand-600 px-3 py-2 text-sm font-medium text-white hover:bg-brand-700"
-          >
-            Cek Berkas Seminar Proposal
-          </Link>
         </div>
       );
     }
     case "ADMIN":
     default: {
-      const [userCount, prodiCount, unreadNotif] = await Promise.all([
-        prisma.user.count(),
-        prisma.prodi.count(),
-        prisma.notification.count({
-          where: { userId: user.id, readAt: null },
-        }),
-      ]);
+      const [userCount, prodiCount, unreadNotif, roleGroups, recentAudit] =
+        await Promise.all([
+          prisma.user.count(),
+          prisma.prodi.count(),
+          prisma.notification.count({
+            where: { userId: user.id, readAt: null },
+          }),
+          prisma.user.groupBy({ by: ["role"], _count: { _all: true } }),
+          prisma.auditLog.findMany({
+            orderBy: { createdAt: "desc" },
+            take: 6,
+            select: {
+              id: true,
+              action: true,
+              entity: true,
+              createdAt: true,
+              actor: { select: { name: true } },
+            },
+          }),
+        ]);
+      const roleCounts: Record<string, number> = {};
+      for (const g of roleGroups) roleCounts[g.role] = g._count._all;
       return (
         <AdminDashboard
           user={user}
           userCount={userCount}
           prodiCount={prodiCount}
           unreadNotif={unreadNotif}
+          roleCounts={roleCounts}
+          recentAudit={recentAudit}
         />
       );
     }

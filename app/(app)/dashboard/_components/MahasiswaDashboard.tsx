@@ -21,6 +21,7 @@ import { StageBadge } from "@/components/ui/status-badge";
 import { formatDate, formatDateTime } from "@/lib/utils";
 import type { MahasiswaDashboardData } from "@/lib/dashboard";
 import { DashboardHero, StatCard, SectionCard, EmptyState } from "./shared";
+import { StageStepper } from "@/components/StageStepper";
 import {
   CHECKLIST_CONFIG,
   parseChecklist,
@@ -69,27 +70,40 @@ export function MahasiswaDashboard({
           icon={GraduationCap}
           label="Tahap Tesis"
           value={tesis ? tesis.stage.replace(/_/g, " ") : "Belum mulai"}
+          accent="brand"
           href="/tesis"
         />
         <StatCard
           icon={ClipboardList}
           label="Bimbingan Menunggu Paraf"
           value={pendingBimbingan}
+          accent="amber"
           href="/tesis/bimbingan"
         />
         <StatCard
           icon={Mail}
           label="Surat Saya"
           value={letterCount}
+          accent="sky"
           href="/surat"
         />
         <StatCard
           icon={Bell}
           label="Notifikasi Baru"
           value={unreadNotif}
+          accent="violet"
           href="/notifikasi"
         />
       </div>
+
+      {tesis && (
+        <SectionCard
+          title="Perjalanan Tesis"
+          description="Posisi Anda pada alur tesis PPs UM Metro"
+        >
+          <StageStepper current={tesis.stage} />
+        </SectionCard>
+      )}
 
       <div className="grid lg:grid-cols-2 gap-4">
         {/* Upload area */}
