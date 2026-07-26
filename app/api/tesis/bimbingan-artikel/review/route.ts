@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { sectionLabel } from "@/lib/bimbinganArtikel";
+import { deletePublicUrls } from "@/lib/storage";
 
 const Body = z.object({
   tesisId: z.string().min(1),
@@ -70,6 +71,72 @@ export async function POST(req: Request) {
     create: { tesisId: parsed.tesisId, section: parsed.section, ...data },
     update: data,
   });
+
+  // Simpan komentar ke RIWAYAT (tidak pernah dihapus, termasuk setelah ACC).
+  // Hanya dicatat bila ada catatan/komentar tertulis. Di-guard agar review
+  // tetap berhasil walau tabel riwayat komentar belum ada di database.
+  if (note) {
+    try {
+      await prisma.bimbinganArtikelComment.create({
+        data: {
+          tesisId: parsed.tesisId,
+          section: parsed.section,
+          peran: isP1 ? "P1" : "P2",
+          dosenId: session.uid,
+          dosenName: session.name,
+          severity: parsed.severity,
+          note,
+          approved: parsed.approved,
+        },
+      });
+    } catch (e) {
+      console.error(
+        "[bimbingan-artikel/review] gagal simpan riwayat komentar:",
+        e,
+      );
+    }
+  }
+
+  // Jika bagian ini SUDAH di-ACC oleh KEDUA pembimbing, cukup simpan 1 berkas
+  // final (versi terkini) dan hapus riwayat revisi lainnya — DB + Storage
+  // (best-effort). Hanya diperiksa saat submit-nya berupa persetujuan.
+  if (parsed.approved) {
+    const row = await prisma.bimbinganArtikel.findUnique({
+      where: {
+        tesisId_section: { tesisId: parsed.tesisId, section: parsed.section },
+      },
+      select: { p1Approved: true, p2Approved: true, fileUrl: true },
+    });
+    if (row?.p1Approved && row?.p2Approved) {
+      const files = await prisma.bimbinganArtikelFile.findMany({
+        where: { tesisId: parsed.tesisId, section: parsed.section },
+        orderBy: [{ revision: "desc" }, { createdAt: "desc" }],
+      });
+      if (files.length > 1) {
+        // Pertahankan berkas yang cocok dengan versi terkini; jika tak ada,
+        // ambil revisi tertinggi (elemen pertama karena diurut desc).
+        const keep = files.find((f) => f.fileUrl === row.fileUrl) ?? files[0];
+        const remove = files.filter((f) => f.id !== keep.id);
+        if (remove.length) {
+          await prisma.bimbinganArtikelFile.deleteMany({
+            where: { id: { in: remove.map((f) => f.id) } },
+          });
+          try {
+            await deletePublicUrls(
+              remove
+                .map((f) => f.fileUrl)
+                .filter((u) => u && u !== keep.fileUrl),
+            );
+          } catch (e) {
+            console.error(
+              "[bimbingan-artikel/review] gagal hapus objek storage:",
+              e,
+            );
+          }
+        }
+      }
+    }
+  }
 
   await prisma.notification.create({
     data: {
