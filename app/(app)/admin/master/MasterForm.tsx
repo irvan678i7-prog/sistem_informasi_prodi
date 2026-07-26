@@ -26,6 +26,7 @@ export function MasterForm({
   const [ok, setOk] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
   const logoRef = useRef<HTMLInputElement | null>(null);
+  const tuFileRef = useRef<HTMLInputElement | null>(null);
 
   async function save() {
     setErr(null);
@@ -92,6 +93,33 @@ export function MasterForm({
 
   function clearTtd() {
     set("ttd.kaprodi.image", "");
+  }
+
+  // Tanda tangan Petugas TU — dipakai otomatis pada dokumen ceklis berkas
+  // (Seminar Proposal / Ujian Tesis) yang disahkan TU.
+  async function onUploadTuTtd(file: File) {
+    setErr(null);
+    setOk(false);
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("key", "ttd.tu.image");
+      const res = await fetch("/api/admin/ttd", { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok) {
+        setErr(data.message || "Gagal unggah TTD TU");
+        return;
+      }
+      set("ttd.tu.image", data.url);
+      setOk(true);
+      router.refresh();
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "Gagal unggah TTD TU");
+    } finally {
+      setUploading(false);
+      if (tuFileRef.current) tuFileRef.current.value = "";
+    }
   }
 
   async function onUploadLogo(file: File) {
@@ -301,6 +329,69 @@ export function MasterForm({
                   type="button"
                   variant="ghost"
                   onClick={clearTtd}
+                  className="text-red-600"
+                >
+                  <Trash2 className="w-4 h-4 mr-1.5" /> Hapus
+                </Button>
+              )}
+            </div>
+          </div>
+        </FormRow>
+      </section>
+
+      <hr />
+      <section className="space-y-3">
+        <h3 className="text-sm font-semibold text-slate-700">
+          Tanda Tangan Petugas TU
+        </h3>
+        <p className="text-xs text-slate-500">
+          Dipakai otomatis pada dokumen ceklis berkas (Seminar Proposal / Ujian
+          Tesis) yang disahkan TU, di samping QR verifikasi.
+        </p>
+        <FormRow
+          label="Tanda Tangan TU (Gambar)"
+          htmlFor="ttdtu"
+          hint="PNG/JPG/WEBP transparan, maks 2 MB."
+        >
+          <div className="flex items-start gap-4">
+            <div className="w-32 h-24 rounded-md border border-dashed border-slate-300 bg-slate-50 grid place-items-center overflow-hidden">
+              {v["ttd.tu.image"] ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={v["ttd.tu.image"]}
+                  alt="Pratinjau TTD TU"
+                  className="max-h-full max-w-full object-contain"
+                />
+              ) : (
+                <span className="text-xs text-slate-400">Belum ada TTD</span>
+              )}
+            </div>
+            <div className="space-y-2">
+              <input
+                ref={tuFileRef}
+                id="ttdtu"
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) onUploadTuTtd(f);
+                }}
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={uploading}
+                onClick={() => tuFileRef.current?.click()}
+              >
+                <UploadCloud className="w-4 h-4 mr-1.5" />
+                {uploading ? "Mengunggah..." : "Unggah TTD TU"}
+              </Button>
+              {v["ttd.tu.image"] && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => set("ttd.tu.image", "")}
                   className="text-red-600"
                 >
                   <Trash2 className="w-4 h-4 mr-1.5" /> Hapus

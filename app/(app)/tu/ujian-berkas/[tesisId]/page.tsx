@@ -3,8 +3,11 @@ import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { canCheckSeminarBerkas } from "@/lib/rbac";
-import { SEMINAR_BERKAS_ITEMS } from "@/lib/seminarBerkas";
-import { CHECKLIST_CONFIG, parseChecklistApproval } from "@/lib/checklist";
+import {
+  CHECKLIST_CONFIG,
+  parseChecklist,
+  parseChecklistApproval,
+} from "@/lib/checklist";
 import { previewUrl } from "@/lib/preview";
 import {
   Card,
@@ -15,8 +18,10 @@ import {
 } from "@/components/ui/card";
 import { TuChecklistForm } from "@/components/TuChecklistForm";
 
-// Detail cek berkas Seminar Proposal satu mahasiswa (halaman TU).
-export default async function TuSeminarBerkasDetailPage({
+const config = CHECKLIST_CONFIG.ujian;
+
+// Detail cek berkas Ujian Tesis satu mahasiswa (halaman TU).
+export default async function TuUjianBerkasDetailPage({
   params,
 }: {
   params: { tesisId: string };
@@ -30,10 +35,10 @@ export default async function TuSeminarBerkasDetailPage({
     select: {
       id: true,
       judulFinal: true,
-      seminarChecklist: true,
+      ujianChecklist: true,
       checklistApproval: true,
       mahasiswa: { select: { name: true, nimNip: true } },
-      seminarBerkas: {
+      ujianBerkas: {
         select: { item: true, fileUrl: true, fileName: true },
         orderBy: { item: "asc" },
       },
@@ -41,31 +46,27 @@ export default async function TuSeminarBerkasDetailPage({
   });
   if (!tesis) notFound();
 
-  const approved = !!parseChecklistApproval(tesis.checklistApproval).seminar;
-
-  const byItem = new Map(tesis.seminarBerkas.map((b) => [b.item, b]));
-  const saved = Array.isArray(tesis.seminarChecklist)
-    ? (tesis.seminarChecklist as boolean[])
+  const byItem = new Map(tesis.ujianBerkas.map((b) => [b.item, b]));
+  const saved = parseChecklist(tesis.ujianChecklist, "ujian");
+  const rawSaved = Array.isArray(tesis.ujianChecklist)
+    ? (tesis.ujianChecklist as unknown[])
     : [];
+  const approved = !!parseChecklistApproval(tesis.checklistApproval).ujian;
 
-  const items = SEMINAR_BERKAS_ITEMS.map((label, i) => {
+  const items = config.items.map((label, i) => {
     const berkas = byItem.get(i + 1);
     return {
       no: i + 1,
       label,
       file: berkas
-        ? {
-            name: berkas.fileName,
-            url: previewUrl(berkas.fileUrl, berkas.fileName),
-          }
+        ? { name: berkas.fileName, url: previewUrl(berkas.fileUrl, berkas.fileName) }
         : null,
     };
   });
 
-  // Nilai awal ceklis: pakai ceklis tersimpan; jika belum pernah dicek,
-  // default mengikuti ada/tidaknya berkas yang diunggah.
-  const initial = SEMINAR_BERKAS_ITEMS.map((_, i) =>
-    typeof saved[i] === "boolean" ? saved[i] : byItem.has(i + 1),
+  // Nilai awal ceklis: pakai tersimpan; jika belum, default ikut ada/tidaknya berkas.
+  const initial = config.items.map((_, i) =>
+    typeof rawSaved[i] === "boolean" ? saved[i] : byItem.has(i + 1),
   );
 
   return (
@@ -73,35 +74,35 @@ export default async function TuSeminarBerkasDetailPage({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">
-            Cek Berkas: {tesis.mahasiswa.name}
+            Cek Berkas Ujian: {tesis.mahasiswa.name}
           </h1>
           <p className="text-sm text-slate-500">
             {tesis.mahasiswa.nimNip}
-            {tesis.judulFinal ? " \u2014 " + tesis.judulFinal : ""}
+            {tesis.judulFinal ? " — " + tesis.judulFinal : ""}
           </p>
         </div>
-        <Link href="/tu/seminar-berkas" className="btn-ghost">
+        <Link href="/tu/ujian-berkas" className="btn-ghost">
           Kembali
         </Link>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Check List Berkas Syarat Seminar Proposal</CardTitle>
+          <CardTitle>Check List Berkas Syarat Ujian Tesis</CardTitle>
           <CardDescription>
-            Klik &quot;Lihat&quot; untuk memeriksa isi berkas, lalu ceklis ADA
-            / TIDAK ADA dan simpan.
+            Klik &quot;Lihat&quot; untuk memeriksa berkas, ceklis ADA / TIDAK
+            ADA, lalu Sahkan &amp; Terbitkan untuk membuat dokumen ber-TTD.
           </CardDescription>
         </CardHeader>
         <CardBody className="p-0">
           <TuChecklistForm
             tesisId={tesis.id}
-            jenis="seminar"
+            jenis="ujian"
             items={items}
             initial={initial}
-            checklistEndpoint={CHECKLIST_CONFIG.seminar.tuChecklistEndpoint}
+            checklistEndpoint={config.tuChecklistEndpoint}
             approved={approved}
-            printHref={`/cetak/ceklis/seminar/${tesis.id}`}
+            printHref={`/cetak/ceklis/ujian/${tesis.id}`}
           />
         </CardBody>
       </Card>
