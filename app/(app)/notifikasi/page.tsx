@@ -49,17 +49,49 @@ export default async function NotifikasiPage() {
           ) : (
             <ul className="divide-y divide-slate-200">
               {list.map((n) => {
+                // `list` diambil SEBELUM auto-mark-read di atas, jadi readAt
+                // di sini masih mencerminkan status belum/sudah dibaca.
+                const unread = !n.readAt;
                 const inner = (
-                  <div className="px-5 py-3 hover:bg-slate-50">
-                    <p className="font-medium text-slate-900">{n.title}</p>
-                    {n.body && (
-                      <p className="text-sm text-slate-600 mt-0.5">
-                        {n.body}
-                      </p>
-                    )}
-                    <p className="text-xs text-slate-400 mt-1">
-                      {formatDateTime(n.createdAt)}
-                    </p>
+                  <div
+                    className={
+                      "px-5 py-3 border-l-4 transition-colors " +
+                      (unread
+                        ? "bg-brand-50/70 border-brand-500 hover:bg-brand-50"
+                        : "border-transparent hover:bg-slate-50")
+                    }
+                  >
+                    <div className="flex items-start gap-2">
+                      {unread && (
+                        <span
+                          className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-brand-600"
+                          aria-label="Belum dibaca"
+                        />
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p
+                          className={
+                            (unread ? "font-semibold" : "font-medium") +
+                            " text-slate-900"
+                          }
+                        >
+                          {n.title}
+                          {unread && (
+                            <span className="badge-blue ml-2 align-middle">
+                              Baru
+                            </span>
+                          )}
+                        </p>
+                        {n.body && (
+                          <p className="text-sm text-slate-600 mt-0.5">
+                            {n.body}
+                          </p>
+                        )}
+                        <p className="text-xs text-slate-400 mt-1">
+                          {formatDateTime(n.createdAt)}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 );
                 return (

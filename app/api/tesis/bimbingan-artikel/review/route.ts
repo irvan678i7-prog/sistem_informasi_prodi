@@ -59,6 +59,19 @@ export async function POST(req: Request) {
       { status: 403 },
     );
 
+  // Kunci server-side: jika kolom pembimbing ini SUDAH di-ACC, tolak perubahan.
+  const existingRow = await prisma.bimbinganArtikel.findUnique({
+    where: {
+      tesisId_section: { tesisId: parsed.tesisId, section: parsed.section },
+    },
+    select: { p1Approved: true, p2Approved: true },
+  });
+  if ((isP1 && existingRow?.p1Approved) || (isP2 && existingRow?.p2Approved))
+    return NextResponse.json(
+      { message: "Bagian ini sudah Anda ACC dan tidak dapat diubah lagi." },
+      { status: 409 },
+    );
+
   const note = parsed.note?.trim() || null;
   const data = isP1
     ? { p1Note: note, p1Severity: parsed.severity, p1ReviewedAt: new Date(), p1Approved: parsed.approved }

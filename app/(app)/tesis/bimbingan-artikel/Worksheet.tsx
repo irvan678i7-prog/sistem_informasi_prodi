@@ -90,6 +90,7 @@ export function Worksheet({
                         section={meta.section}
                         initialSeverity={row.p1Severity}
                         initialNote={row.p1Note}
+                        initialApproved={row.p1Approved}
                       />
                     ) : (
                       <Evaluation
@@ -118,6 +119,7 @@ export function Worksheet({
                         section={meta.section}
                         initialSeverity={row.p2Severity}
                         initialNote={row.p2Note}
+                        initialApproved={row.p2Approved}
                       />
                     ) : (
                       <Evaluation
