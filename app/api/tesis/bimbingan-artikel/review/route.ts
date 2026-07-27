@@ -110,55 +110,88 @@ export async function POST(req: Request) {
     }
   }
 
+  // Status ACC terkini bagian ini — dipakai untuk prune file & notifikasi.
+  const row = await prisma.bimbinganArtikel.findUnique({
+    where: {
+      tesisId_section: { tesisId: parsed.tesisId, section: parsed.section },
+    },
+    select: { p1Approved: true, p2Approved: true, fileUrl: true },
+  });
+  const bothApproved = !!(row?.p1Approved && row?.p2Approved);
+
   // Jika bagian ini SUDAH di-ACC oleh KEDUA pembimbing, cukup simpan 1 berkas
   // final (versi terkini) dan hapus riwayat revisi lainnya — DB + Storage
-  // (best-effort). Hanya diperiksa saat submit-nya berupa persetujuan.
-  if (parsed.approved) {
-    const row = await prisma.bimbinganArtikel.findUnique({
-      where: {
-        tesisId_section: { tesisId: parsed.tesisId, section: parsed.section },
-      },
-      select: { p1Approved: true, p2Approved: true, fileUrl: true },
+  // (best-effort). Riwayat KOMENTAR tetap utuh.
+  if (parsed.approved && bothApproved) {
+    const files = await prisma.bimbinganArtikelFile.findMany({
+      where: { tesisId: parsed.tesisId, section: parsed.section },
+      orderBy: [{ revision: "desc" }, { createdAt: "desc" }],
     });
-    if (row?.p1Approved && row?.p2Approved) {
-      const files = await prisma.bimbinganArtikelFile.findMany({
-        where: { tesisId: parsed.tesisId, section: parsed.section },
-        orderBy: [{ revision: "desc" }, { createdAt: "desc" }],
-      });
-      if (files.length > 1) {
-        // Pertahankan berkas yang cocok dengan versi terkini; jika tak ada,
-        // ambil revisi tertinggi (elemen pertama karena diurut desc).
-        const keep = files.find((f) => f.fileUrl === row.fileUrl) ?? files[0];
-        const remove = files.filter((f) => f.id !== keep.id);
-        if (remove.length) {
-          await prisma.bimbinganArtikelFile.deleteMany({
-            where: { id: { in: remove.map((f) => f.id) } },
-          });
-          try {
-            await deletePublicUrls(
-              remove
-                .map((f) => f.fileUrl)
-                .filter((u) => u && u !== keep.fileUrl),
-            );
-          } catch (e) {
-            console.error(
-              "[bimbingan-artikel/review] gagal hapus objek storage:",
-              e,
-            );
-          }
+    if (files.length > 1) {
+      const keep = files.find((f) => f.fileUrl === row?.fileUrl) ?? files[0];
+      const remove = files.filter((f) => f.id !== keep.id);
+      if (remove.length) {
+        await prisma.bimbinganArtikelFile.deleteMany({
+          where: { id: { in: remove.map((f) => f.id) } },
+        });
+        try {
+          await deletePublicUrls(
+            remove.map((f) => f.fileUrl).filter((u) => u && u !== keep.fileUrl),
+          );
+        } catch (e) {
+          console.error(
+            "[bimbingan-artikel/review] gagal hapus objek storage:",
+            e,
+          );
         }
       }
     }
   }
 
-  await prisma.notification.create({
-    data: {
+  // Notifikasi. BUG LAMA: saat satu pembimbing meng-ACC, pembimbing lain tidak
+  // pernah diberi tahu. Sekarang: saat ACC → mahasiswa + pembimbing LAINNYA
+  // dinotifikasi; jika keduanya sudah ACC, mahasiswa dapat notif "lengkap".
+  const secLabel = sectionLabel(parsed.section);
+  const peran = isP1 ? "Pembimbing 1" : "Pembimbing 2";
+  const notifs: Array<{
+    userId: string;
+    title: string;
+    body: string;
+    link: string;
+  }> = [];
+  if (parsed.approved) {
+    notifs.push({
+      userId: tesis.mahasiswaId,
+      title: "Sub-penilaian di-ACC",
+      body: `${peran} (${session.name}) menyetujui/ACC bagian "${secLabel}".`,
+      link: "/tesis/bimbingan-artikel",
+    });
+    const otherId = isP1 ? tesis.pembimbing2Id : tesis.pembimbing1Id;
+    if (otherId && otherId !== session.uid) {
+      notifs.push({
+        userId: otherId,
+        title: "Menunggu ACC Anda",
+        body: `${peran} sudah ACC bagian "${secLabel}". Mohon tinjau & ACC bagian ini.`,
+        link: `/bimbingan/artikel/${parsed.tesisId}`,
+      });
+    }
+    if (bothApproved) {
+      notifs.push({
+        userId: tesis.mahasiswaId,
+        title: "Bagian Disetujui Lengkap",
+        body: `Bagian "${secLabel}" telah disetujui kedua pembimbing.`,
+        link: "/tesis/bimbingan-artikel",
+      });
+    }
+  } else {
+    notifs.push({
       userId: tesis.mahasiswaId,
       title: "Evaluasi Bimbingan Artikel",
-      body: `${session.name} menilai bagian "${sectionLabel(parsed.section)}".`,
+      body: `${session.name} menilai bagian "${secLabel}".`,
       link: "/tesis/bimbingan-artikel",
-    },
-  });
+    });
+  }
+  await prisma.notification.createMany({ data: notifs });
 
   await prisma.auditLog.create({
     data: {
