@@ -80,6 +80,21 @@ export function Worksheet({
                   <td className="px-3 py-3 text-slate-500">{meta.no}</td>
                   <td className="px-3 py-3 font-medium text-slate-900">
                     {meta.label}
+                    {(row.p1Approved || row.p2Approved) && (
+                      <div className="mt-1.5 flex flex-wrap gap-1">
+                        {row.p1Approved && (
+                          <span className="badge-green">P1 ✓ ACC</span>
+                        )}
+                        {row.p2Approved && (
+                          <span className="badge-green">P2 ✓ ACC</span>
+                        )}
+                        {row.p1Approved && row.p2Approved && (
+                          <span className="badge bg-emerald-600 text-white">
+                            ✓ ACC Lengkap
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </td>
 
                   {/* Kolom Pembimbing 1 */}
