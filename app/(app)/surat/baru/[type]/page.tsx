@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import type { LetterType } from "@prisma/client";
 import { getCurrentUser } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { LETTER_FIELDS, LETTER_LABEL } from "@/lib/letterTemplates";
 import {
   Card,
@@ -32,14 +33,20 @@ export default async function NewSuratPage({
   if (!user) return null;
   if (user.role !== "MAHASISWA") redirect("/surat");
 
+  // Profil diambil terpisah (getCurrentUser sengaja tidak lagi memuatnya).
+  const profile = await prisma.mahasiswaProfile.findUnique({
+    where: { userId: user.id },
+    select: { semester: true, angkatan: true },
+  });
+
   const fields = LETTER_FIELDS[letterType];
   const mhsInfo = {
     name: user.name,
     nimNip: user.nimNip,
     prodi: user.prodi?.name ?? null,
     jenjang: user.prodi?.jenjang ?? "S2",
-    semester: user.mahasiswaProfile?.semester ?? null,
-    angkatan: user.mahasiswaProfile?.angkatan ?? null,
+    semester: profile?.semester ?? null,
+    angkatan: profile?.angkatan ?? null,
   };
 
   return (

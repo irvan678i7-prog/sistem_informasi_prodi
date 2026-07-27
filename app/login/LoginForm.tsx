@@ -61,8 +61,9 @@ export function LoginForm({ scope }: { scope: "user" | "admin" }) {
       }
 
       const next = params?.get("next");
+      // Cukup push: tujuan (/dashboard) dirender dinamis dengan data terbaru.
+      // router.refresh() sebelumnya membuat render ganda → login terasa lambat.
       router.push(next && next.startsWith("/") ? next : "/dashboard");
-      router.refresh();
     } catch (e: unknown) {
       // Network error / fetch gagal total.
       const msg =

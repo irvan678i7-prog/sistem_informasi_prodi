@@ -75,10 +75,10 @@ export async function getSession(): Promise<SessionPayload | null> {
 export const getCurrentUser = cache(async () => {
   const session = await getSession();
   if (!session) return null;
-  // `select` eksplisit: ambil semua kolom yang dipakai UI KECUALI
-  // `hashedPassword`. Dengan `include` sebelumnya, hash bcrypt user ikut
-  // terbawa ke props React Server Component setiap halaman — data sensitif
-  // yang tidak perlu pernah keluar dari server.
+  // `select` ramping untuk jalur panas (dipanggil di layout + tiap halaman).
+  // Buang `hashedPassword` (sensitif) DAN relasi mahasiswaProfile/dosenProfile
+  // yang nyaris tak pernah dipakai dari sini — memuatnya menambah round-trip DB
+  // pada SETIAP navigasi. Halaman yang butuh profil mengambilnya sendiri.
   return prisma.user.findUnique({
     where: { id: session.uid },
     select: {
@@ -94,8 +94,6 @@ export const getCurrentUser = cache(async () => {
       createdAt: true,
       updatedAt: true,
       prodi: true,
-      mahasiswaProfile: true,
-      dosenProfile: true,
     },
   });
 });
