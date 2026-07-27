@@ -35,14 +35,16 @@ export default async function BulkUploadPage() {
           Bulk Upload Mahasiswa
         </h1>
         <p className="text-sm text-slate-500">
-          Unggah daftar mahasiswa via CSV. Username = NIM, password awal juga =
-          NIM.
+          Unggah daftar mahasiswa via Excel (.xlsx) atau CSV. Username = NIM,
+          password awal juga = NIM. Cara termudah: klik{" "}
+          <strong>Download Template Excel</strong> di form bawah, isi, lalu
+          unggah kembali.
         </p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Format CSV</CardTitle>
+          <CardTitle>Format Kolom</CardTitle>
           <CardDescription>
             Baris pertama harus berisi header. Kolom yang dikenali:
           </CardDescription>
@@ -69,7 +71,7 @@ export default async function BulkUploadPage() {
             </li>
           </ul>
           <p className="text-slate-700">
-            Contoh isi CSV:
+            Contoh susunan kolom (template Excel memakai header yang sama):
           </p>
           <pre className="bg-slate-50 p-3 rounded-md text-xs overflow-x-auto border border-slate-200">{`nim,name,email,prodiCode,angkatan,semester
 24010001,Andi Pratama,andi@mhs.ummetro.ac.id,MMP,2024,1
@@ -86,7 +88,7 @@ export default async function BulkUploadPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Unggah CSV</CardTitle>
+          <CardTitle>Unggah File</CardTitle>
         </CardHeader>
         <CardBody>
           <BulkUploadForm prodi={prodi} />

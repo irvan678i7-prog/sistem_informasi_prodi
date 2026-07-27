@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Download, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, FormRow } from "@/components/ui/input";
 import { Alert } from "@/components/ui/alert";
@@ -18,53 +19,6 @@ type Result = {
 
 const REQUIRED = ["nim", "name"];
 
-function parseCSV(text: string): { headers: string[]; rows: Row[] } {
-  // Simple CSV parser: split by lines, handles quoted fields with commas.
-  const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
-  if (lines.length === 0) return { headers: [], rows: [] };
-  const headers = splitLine(lines[0]).map((h) => h.trim());
-  const rows: Row[] = [];
-  for (let i = 1; i < lines.length; i++) {
-    const cols = splitLine(lines[i]);
-    const obj: Row = {};
-    headers.forEach((h, idx) => {
-      obj[h] = (cols[idx] ?? "").trim();
-    });
-    rows.push(obj);
-  }
-  return { headers, rows };
-}
-
-function splitLine(line: string): string[] {
-  const out: string[] = [];
-  let cur = "";
-  let inQuotes = false;
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i];
-    if (inQuotes) {
-      if (ch === '"' && line[i + 1] === '"') {
-        cur += '"';
-        i += 1;
-      } else if (ch === '"') {
-        inQuotes = false;
-      } else {
-        cur += ch;
-      }
-    } else {
-      if (ch === '"') {
-        inQuotes = true;
-      } else if (ch === ",") {
-        out.push(cur);
-        cur = "";
-      } else {
-        cur += ch;
-      }
-    }
-  }
-  out.push(cur);
-  return out;
-}
-
 export function BulkUploadForm({
   prodi,
 }: {
@@ -74,30 +28,48 @@ export function BulkUploadForm({
   const [file, setFile] = useState<File | null>(null);
   const [defaultProdiId, setDefaultProdiId] = useState("");
   const [upsert, setUpsert] = useState(false);
-  const [preview, setPreview] = useState<Row[] | null>(null);
   const [headers, setHeaders] = useState<string[]>([]);
+  const [allRows, setAllRows] = useState<Row[]>([]);
+  const [preview, setPreview] = useState<Row[] | null>(null);
   const [missing, setMissing] = useState<string[]>([]);
+  const [parsing, setParsing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [result, setResult] = useState<Result | null>(null);
 
+  // Kirim file ke server untuk dibaca (Excel/CSV) → { headers, rows }.
   async function onFile(f: File | null) {
     setErr(null);
     setResult(null);
     setPreview(null);
     setHeaders([]);
     setMissing([]);
+    setAllRows([]);
     setFile(f);
     if (!f) return;
+    setParsing(true);
     try {
-      const text = await f.text();
-      const { headers: h, rows } = parseCSV(text);
+      const fd = new FormData();
+      fd.append("file", f);
+      const res = await fetch("/api/admin/users/bulk/parse", {
+        method: "POST",
+        body: fd,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setErr(data.message || "Gagal membaca file");
+        return;
+      }
+      const h: string[] = data.headers ?? [];
+      const rows: Row[] = data.rows ?? [];
       setHeaders(h);
-      const miss = REQUIRED.filter((k) => !h.includes(k));
-      setMissing(miss);
+      setAllRows(rows);
       setPreview(rows.slice(0, 10));
+      setMissing(REQUIRED.filter((k) => !h.includes(k)));
     } catch (e: unknown) {
-      setErr(e instanceof Error ? e.message : "Gagal membaca CSV");
+      setErr(e instanceof Error ? e.message : "Gagal membaca file");
+    } finally {
+      setParsing(false);
     }
   }
 
@@ -105,26 +77,24 @@ export function BulkUploadForm({
     setErr(null);
     setResult(null);
     if (!file) {
-      setErr("Pilih file CSV dulu");
+      setErr("Pilih file Excel (.xlsx) atau CSV dulu");
       return;
     }
     if (missing.length > 0) {
-      setErr(`Header CSV kurang: ${missing.join(", ")}`);
+      setErr(`Header kurang: ${missing.join(", ")}`);
+      return;
+    }
+    if (allRows.length === 0) {
+      setErr("Tidak ada baris data");
       return;
     }
     setLoading(true);
     try {
-      const text = await file.text();
-      const { rows } = parseCSV(text);
-      if (rows.length === 0) {
-        setErr("CSV tidak punya baris data");
-        return;
-      }
       const res = await fetch("/api/admin/users/bulk", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          rows,
+          rows: allRows,
           upsert,
           defaultProdiId: defaultProdiId || null,
         }),
@@ -147,14 +117,24 @@ export function BulkUploadForm({
     <div className="space-y-4">
       {err && <Alert variant="error">{err}</Alert>}
 
-      <FormRow label="File CSV" htmlFor="csv" required>
+      <a
+        href="/api/admin/users/bulk/template"
+        className="inline-flex items-center gap-1.5 rounded-md bg-brand-600 px-3 py-2 text-sm font-medium text-white hover:bg-brand-700"
+      >
+        <Download className="w-4 h-4" /> Download Template Excel (.xlsx)
+      </a>
+
+      <FormRow label="File Excel (.xlsx) atau CSV" htmlFor="upl" required>
         <input
-          id="csv"
+          id="upl"
           type="file"
-          accept=".csv,text/csv,application/vnd.ms-excel"
+          accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
           onChange={(e) => onFile(e.target.files?.[0] || null)}
-          className="block text-sm file:mr-3 file:rounded-md file:border-0 file:bg-emerald-700 file:text-white file:px-3 file:py-2 file:text-sm hover:file:bg-emerald-800 cursor-pointer"
+          className="block text-sm file:mr-3 file:rounded-md file:border-0 file:bg-brand-600 file:text-white file:px-3 file:py-2 file:text-sm hover:file:bg-brand-700 cursor-pointer"
         />
+        {parsing && (
+          <p className="mt-1 text-xs text-slate-500">Membaca file…</p>
+        )}
       </FormRow>
 
       <FormRow
@@ -189,7 +169,7 @@ export function BulkUploadForm({
         <div className="rounded-md border border-slate-200">
           <div className="px-4 py-2 bg-slate-50 text-sm flex items-center justify-between border-b border-slate-200">
             <span className="font-medium">
-              Pratinjau ({preview.length} baris pertama)
+              Pratinjau ({preview.length} dari {allRows.length} baris)
             </span>
             <span
               className={
@@ -232,7 +212,8 @@ export function BulkUploadForm({
         </div>
       )}
 
-      <Button onClick={onSubmit} disabled={loading || !file}>
+      <Button onClick={onSubmit} disabled={loading || parsing || !file}>
+        <Upload className="w-4 h-4 mr-1.5" />
         {loading ? "Mengunggah..." : "Unggah & Buat Akun"}
       </Button>
 
