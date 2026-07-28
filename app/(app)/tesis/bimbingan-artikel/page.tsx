@@ -1,10 +1,27 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Alert } from "@/components/ui/alert";
 import { getBimbinganArtikel } from "@/lib/bimbinganArtikel";
 import { Worksheet } from "./Worksheet";
 import { KartuPrint } from "./KartuPrint";
+import type { RequestStatus } from "@prisma/client";
+
+// Penjelasan status judul yang BELUM ACC, supaya mahasiswa tahu apa yang
+// sedang ditunggu. ACC = judulStatus "APPROVED" (difinalisasi Kaprodi).
+function judulStatusHint(status: RequestStatus): string {
+  switch (status) {
+    case "SUBMITTED":
+      return "Judul Anda sudah diajukan dan sedang menunggu persetujuan Pembimbing Akademik (PA).";
+    case "VERIFIED":
+      return "Judul sudah disetujui PA dan sedang menunggu finalisasi (ACC) oleh Kaprodi.";
+    case "REJECTED":
+      return "Judul Anda ditolak/diminta revisi. Silakan perbaiki dan ajukan kembali.";
+    default:
+      return "Judul belum diajukan. Ajukan judul terlebih dahulu pada menu Pengajuan Judul.";
+  }
+}
 
 // Mahasiswa view of the bimbingan artikel worksheet. Non-mahasiswa are routed
 // to the pembimbing list at /bimbingan/artikel.
@@ -22,6 +39,7 @@ export default async function BimbinganArtikelPage() {
       track: true,
       judulFinal: true,
       judul1: true,
+      judulStatus: true,
       pembimbing1Id: true,
       pembimbing1: { select: { name: true } },
       pembimbing2: { select: { name: true } },
@@ -29,8 +47,43 @@ export default async function BimbinganArtikelPage() {
   });
   if (!tesis) redirect("/tesis");
 
-  const rows = await getBimbinganArtikel(tesis.id);
   const trackLabel = tesis.track === "ARTIKEL" ? "Artikel" : "Tesis";
+
+  // GATE: kartu bimbingan hanya terbuka setelah judul di-ACC (difinalisasi
+  // Kaprodi). Sebelum itu mahasiswa tidak melihat lembar kerja maupun tombol
+  // unggah, agar tidak ada berkas yang masuk untuk judul yang masih berubah.
+  // Guard yang sama juga diterapkan di API unggah (server-side).
+  if (tesis.judulStatus !== "APPROVED") {
+    return (
+      <div className="max-w-3xl mx-auto space-y-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">
+            Bimbingan {trackLabel}
+          </h1>
+          <p className="text-sm text-slate-500">
+            Kartu bimbingan terbuka setelah judul Anda di-ACC (difinalisasi
+            Kaprodi).
+          </p>
+        </div>
+
+        <Alert variant="warning">
+          <p className="font-medium">Kartu bimbingan belum dapat diakses</p>
+          <p className="mt-1">{judulStatusHint(tesis.judulStatus)}</p>
+        </Alert>
+
+        <div className="flex flex-wrap gap-2">
+          <Link href="/tesis/judul" className="btn-primary">
+            Lihat Pengajuan Judul
+          </Link>
+          <Link href="/tesis" className="btn-secondary">
+            Kembali ke Tesis Saya
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const rows = await getBimbinganArtikel(tesis.id);
 
   const header = {
     nama: user.name,

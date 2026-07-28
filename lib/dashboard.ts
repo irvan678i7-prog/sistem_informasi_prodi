@@ -10,15 +10,18 @@ import { prisma } from "./prisma";
 
 export type StageCount = { stage: TesisStage; count: number };
 
-// Stage order used to render progress summaries consistently.
+// Urutan tahap untuk semua ringkasan progres, mengikuti alur resmi:
+// Judul → Proposal → Bimbingan → Seminar → Revisi → KUT → Ujian → Selesai.
+// Sama dengan urutan pada components/StageStepper.tsx supaya tampilan
+// mahasiswa, dosen, dan kaprodi konsisten. Enum Prisma tidak diubah.
 export const TESIS_STAGES: TesisStage[] = [
   "JUDUL",
   "PROPOSAL",
-  "SEMINAR_PROPOSAL",
   "BIMBINGAN",
+  "SEMINAR_PROPOSAL",
+  "REVISI",
   "KUT",
   "SIDANG",
-  "REVISI",
   "SELESAI",
 ];
 
@@ -80,6 +83,9 @@ export type MahasiswaDashboardData = Awaited<
 // Dosen
 // ---------------------------------------------------------------------------
 
+// Dipakai oleh dosen DAN kaprodi: kaprodi juga bisa menjadi PA / Pembimbing 1
+// / Pembimbing 2, sehingga ia perlu ringkasan bimbingan pribadinya di samping
+// ringkasan prodi.
 export async function getDosenDashboard(userId: string) {
   // A dosen "membimbing" a thesis when they are listed as PA or as either
   // pembimbing on it. We count distinct theses across those roles.
@@ -131,8 +137,14 @@ export async function getKaprodiDashboard(prodiId: string | null) {
   const tesisWhere: Prisma.TesisWhereInput = prodiId
     ? { mahasiswa: { prodiId } }
     : {};
-  const userWhere = (role: "DOSEN" | "MAHASISWA"): Prisma.UserWhereInput =>
-    prodiId ? { role, prodiId } : { role };
+  // Kaprodi ikut dihitung sebagai dosen prodi karena ia juga membimbing.
+  const userWhere = (
+    role: "DOSEN" | "MAHASISWA",
+  ): Prisma.UserWhereInput => {
+    const roleFilter: Prisma.UserWhereInput =
+      role === "DOSEN" ? { role: { in: ["DOSEN", "KAPRODI"] } } : { role };
+    return prodiId ? { ...roleFilter, prodiId } : roleFilter;
+  };
 
   const [dosenCount, mahasiswaCount, tesisTotal, stageGrouped, recentTheses] =
     await Promise.all([
