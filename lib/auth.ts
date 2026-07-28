@@ -4,8 +4,8 @@ import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
 import type { Role } from "@prisma/client";
 import { prisma } from "./prisma";
+import { getSessionSecret } from "./sessionSecret";
 
-const SECRET = process.env.JWT_SECRET ?? "dev-only-secret-change-me";
 const COOKIE_NAME = "sipro_session";
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 7; // 7 days
 
@@ -17,14 +17,16 @@ export interface SessionPayload {
 }
 
 export function signSession(payload: SessionPayload) {
-  return jwt.sign(payload, SECRET, { expiresIn: "7d" });
+  // getSessionSecret() sengaja dipanggil di sini (bukan saat modul dimuat)
+  // supaya kesalahan konfigurasi muncul sebagai error jelas pada saat login,
+  // bukan menggagalkan seluruh build.
+  return jwt.sign(payload, getSessionSecret(), { expiresIn: "7d" });
 }
 
 export function verifySession(token: string | undefined | null): SessionPayload | null {
   if (!token) return null;
   try {
-    const decoded = jwt.verify(token, SECRET) as SessionPayload;
-    return decoded;
+    return jwt.verify(token, getSessionSecret()) as SessionPayload;
   } catch {
     return null;
   }
@@ -79,7 +81,7 @@ export const getCurrentUser = cache(async () => {
   // Buang `hashedPassword` (sensitif) DAN relasi mahasiswaProfile/dosenProfile
   // yang nyaris tak pernah dipakai dari sini — memuatnya menambah round-trip DB
   // pada SETIAP navigasi. Halaman yang butuh profil mengambilnya sendiri.
-  return prisma.user.findUnique({
+  const user = await prisma.user.findUnique({
     where: { id: session.uid },
     select: {
       id: true,
@@ -96,13 +98,33 @@ export const getCurrentUser = cache(async () => {
       prodi: true,
     },
   });
+
+  // Token berlaku 7 hari dan tidak bisa ditarik kembali dari sisi klien.
+  // Karena itu status akun diperiksa di sini: akun yang dihapus atau
+  // dinonaktifkan admin langsung kehilangan akses pada permintaan berikutnya,
+  // tanpa harus menunggu tokennya kedaluwarsa.
+  if (!user || !user.isActive) return null;
+
+  return user;
 });
 
+/**
+ * Pastikan pemanggil punya sesi sah DAN salah satu role yang diizinkan.
+ *
+ * Selain mencocokkan role di dalam token, status akun diverifikasi ke database
+ * (lewat getCurrentUser yang sudah di-cache per request) sehingga:
+ *  - akun nonaktif/terhapus tidak bisa memakai token lamanya, dan
+ *  - role yang diturunkan admin langsung berlaku, bukan setelah token habis.
+ */
 export async function requireRole(...allowed: Role[]) {
   const session = await getSession();
   if (!session || !allowed.includes(session.role)) {
     return null;
   }
+  const user = await getCurrentUser();
+  if (!user) return null;
+  // Role di token sudah tidak sesuai data terbaru → paksa login ulang.
+  if (user.role !== session.role || !allowed.includes(user.role)) return null;
   return session;
 }
 
