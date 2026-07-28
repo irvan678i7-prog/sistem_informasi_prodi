@@ -20,17 +20,25 @@ export type EdgeSessionPayload = {
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
-function base64UrlToBytes(value: string): Uint8Array {
+/**
+ * Decode segmen base64url menjadi ArrayBuffer.
+ *
+ * Sengaja mengembalikan `ArrayBuffer` (bukan `Uint8Array`) karena sejak
+ * TypeScript 5.7 `Uint8Array` bergeneric atas `ArrayBufferLike`, sehingga tidak
+ * bisa langsung dipakai sebagai `BufferSource` pada crypto.subtle.
+ */
+function base64UrlToArrayBuffer(value: string): ArrayBuffer {
   const base64 = value.replace(/-/g, "+").replace(/_/g, "/");
   const padding = base64.length % 4 === 0 ? "" : "=".repeat(4 - (base64.length % 4));
   const binary = atob(base64 + padding);
-  const bytes = new Uint8Array(binary.length);
+  const buffer = new ArrayBuffer(binary.length);
+  const bytes = new Uint8Array(buffer);
   for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
-  return bytes;
+  return buffer;
 }
 
 function decodeJsonSegment(segment: string): unknown {
-  return JSON.parse(decoder.decode(base64UrlToBytes(segment)));
+  return JSON.parse(decoder.decode(base64UrlToArrayBuffer(segment)));
 }
 
 /**
@@ -66,7 +74,7 @@ export async function verifySessionToken(
     const isValid = await crypto.subtle.verify(
       "HMAC",
       key,
-      base64UrlToBytes(signatureSegment),
+      base64UrlToArrayBuffer(signatureSegment),
       encoder.encode(`${headerSegment}.${payloadSegment}`),
     );
     if (!isValid) return null;
