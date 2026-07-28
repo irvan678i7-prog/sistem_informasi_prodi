@@ -179,16 +179,24 @@ export default async function ManagePembimbingPage() {
                   </div>
 
                   <div className="rounded-md border border-slate-200 p-3">
-                    <AssignPembimbingPanel
-                      tesisId={t.id}
-                      dosen={dosenList.map((d) => ({
-                        id: d.id,
-                        name: d.name,
-                      }))}
-                      initialP1={t.pembimbing1Id ?? ""}
-                      initialP2={t.pembimbing2Id ?? ""}
-                      hasExisting={hasP1}
-                    />
+                    {t.judulStatus === "APPROVED" ? (
+                      <AssignPembimbingPanel
+                        tesisId={t.id}
+                        dosen={dosenList.map((d) => ({
+                          id: d.id,
+                          name: d.name,
+                        }))}
+                        initialP1={t.pembimbing1Id ?? ""}
+                        initialP2={t.pembimbing2Id ?? ""}
+                        hasExisting={hasP1}
+                      />
+                    ) : (
+                      <p className="text-xs text-amber-700">
+                        Pembimbing 1 &amp; 2 dapat ditetapkan setelah judul
+                        difinalisasi (ACC). Status judul saat ini:{" "}
+                        <strong>{t.judulStatus}</strong>.
+                      </p>
+                    )}
                   </div>
                 </CardBody>
               </Card>

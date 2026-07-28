@@ -225,6 +225,17 @@ export function JudulForm({
   return (
     <form onSubmit={onPreview} className="space-y-4">
       {err && <Alert variant="error">{err}</Alert>}
+      {/* Pilih PA lebih dulu, baru isi rencana judul. */}
+      <FormRow label="Dosen Pembimbing Akademik (PA)" htmlFor="paId" required>
+        <Select id="paId" value={paId} onChange={(e) => setPaId(e.target.value)}>
+          <option value="">— pilih Dosen PA —</option>
+          {dosen.map((d) => (
+            <option key={d.id} value={d.id}>
+              {d.name}
+            </option>
+          ))}
+        </Select>
+      </FormRow>
       {entries.map((e, i) => (
         <div
           key={i}
@@ -286,16 +297,6 @@ export function JudulForm({
           ))}
         </div>
       </fieldset>
-      <FormRow label="Dosen Pembimbing Akademik" htmlFor="paId" required>
-        <Select id="paId" value={paId} onChange={(e) => setPaId(e.target.value)}>
-          <option value="">— pilih Dosen PA —</option>
-          {dosen.map((d) => (
-            <option key={d.id} value={d.id}>
-              {d.name}
-            </option>
-          ))}
-        </Select>
-      </FormRow>
       <Button type="submit" variant="secondary">
         <Eye className="w-4 h-4 mr-1.5" /> Pratinjau
       </Button>

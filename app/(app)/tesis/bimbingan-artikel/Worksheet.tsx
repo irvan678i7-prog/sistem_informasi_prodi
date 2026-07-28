@@ -45,11 +45,11 @@ export function Worksheet({
               : "Kartu Bimbingan Tesis"}
           </h3>
           <div className="space-y-1 text-sm">
-            <HeaderRow k="Nama" v={header.nama} />
-            <HeaderRow k="NPM" v={header.npm} />
             <HeaderRow k="Judul" v={header.judul} />
-            <HeaderRow k="Pembimbing 1" v={header.pembimbing1} />
-            <HeaderRow k="Pembimbing 2" v={header.pembimbing2} />
+            <HeaderRow k="Nama Mahasiswa" v={header.nama} />
+            <HeaderRow k="NPM" v={header.npm} />
+            <HeaderRow k="Dosen Pembimbing 1" v={header.pembimbing1} />
+            <HeaderRow k="Dosen Pembimbing 2" v={header.pembimbing2} />
           </div>
         </div>
 

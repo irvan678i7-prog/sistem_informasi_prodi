@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { MessageCircle } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import {
@@ -9,7 +10,18 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
+import { StageBadge } from "@/components/ui/status-badge";
 import { formatDateTime } from "@/lib/utils";
+
+// Ubah nomor telepon menjadi tautan wa.me (asumsi nomor Indonesia).
+function waHref(phone: string | null | undefined): string | null {
+  if (!phone) return null;
+  let d = phone.replace(/\D/g, "");
+  if (!d) return null;
+  if (d.startsWith("0")) d = "62" + d.slice(1);
+  else if (!d.startsWith("62")) d = "62" + d;
+  return `https://wa.me/${d}`;
+}
 
 // Pembimbing list of students whose article worksheet they supervise.
 export default async function BimbinganArtikelListPage() {
@@ -34,10 +46,20 @@ export default async function BimbinganArtikelListPage() {
 
   const list = await prisma.tesis.findMany({
     where,
-    include: {
-      mahasiswa: { include: { prodi: true } },
-      pembimbing1: { select: { name: true } },
-      pembimbing2: { select: { name: true } },
+    select: {
+      id: true,
+      judul1: true,
+      judulFinal: true,
+      stage: true,
+      updatedAt: true,
+      mahasiswa: {
+        select: {
+          name: true,
+          nimNip: true,
+          phone: true,
+          prodi: { select: { code: true } },
+        },
+      },
     },
     orderBy: { updatedAt: "desc" },
     take: 100,
@@ -75,13 +97,18 @@ export default async function BimbinganArtikelListPage() {
                   </th>
                   <th className="px-5 py-3 font-medium text-slate-600">Judul</th>
                   <th className="px-5 py-3 font-medium text-slate-600">
+                    Status
+                  </th>
+                  <th className="px-5 py-3 font-medium text-slate-600">
                     Update
                   </th>
                   <th className="px-5 py-3" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
-                {list.map((t) => (
+                {list.map((t) => {
+                  const wa = waHref(t.mahasiswa.phone);
+                  return (
                   <tr key={t.id} className="hover:bg-slate-50">
                     <td className="px-5 py-3">
                       <p className="font-medium text-slate-900">
@@ -99,10 +126,24 @@ export default async function BimbinganArtikelListPage() {
                         {t.judulFinal || t.judul1 || "(belum ada)"}
                       </p>
                     </td>
+                    <td className="px-5 py-3">
+                      <StageBadge stage={t.stage} />
+                    </td>
                     <td className="px-5 py-3 text-slate-500 whitespace-nowrap">
                       {formatDateTime(t.updatedAt)}
                     </td>
-                    <td className="px-5 py-3 text-right">
+                    <td className="px-5 py-3 text-right whitespace-nowrap">
+                      {wa && (
+                        <a
+                          href={wa}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn-ghost text-sm text-emerald-700 inline-flex items-center gap-1"
+                          title={`WhatsApp ${t.mahasiswa.name}`}
+                        >
+                          <MessageCircle className="w-4 h-4" /> WA
+                        </a>
+                      )}
                       <Link
                         href={`/bimbingan/artikel/${t.id}`}
                         className="btn-ghost text-sm"
@@ -111,7 +152,8 @@ export default async function BimbinganArtikelListPage() {
                       </Link>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           )}

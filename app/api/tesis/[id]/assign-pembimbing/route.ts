@@ -58,6 +58,16 @@ export async function POST(
   if (!tesis)
     return NextResponse.json({ message: "Tidak ditemukan" }, { status: 404 });
 
+  // Pembimbing 1 & 2 hanya boleh ditetapkan setelah judul difinalisasi (ACC).
+  if (tesis.judulStatus !== "APPROVED")
+    return NextResponse.json(
+      {
+        message:
+          "Judul belum difinalisasi Kaprodi. Tetapkan Pembimbing 1 & 2 setelah judul di-ACC.",
+      },
+      { status: 409 },
+    );
+
   if (
     session.role === "KAPRODI" &&
     tesis.mahasiswa.prodiId &&
