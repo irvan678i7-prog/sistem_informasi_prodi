@@ -38,14 +38,23 @@ export default async function DashboardPage() {
       );
     }
     case "KAPRODI": {
-      const [data, unreadNotif] = await Promise.all([
+      // Kaprodi juga dapat menjadi PA / Pembimbing 1 / Pembimbing 2, jadi
+      // selain ringkasan prodi ia menerima ringkasan bimbingan pribadinya
+      // (data yang sama seperti dashboard dosen).
+      const [data, bimbingan, unreadNotif] = await Promise.all([
         getKaprodiDashboard(user.prodiId),
+        getDosenDashboard(user.id),
         prisma.notification.count({
           where: { userId: user.id, readAt: null },
         }),
       ]);
       return (
-        <KaprodiDashboard user={user} data={data} unreadNotif={unreadNotif} />
+        <KaprodiDashboard
+          user={user}
+          data={data}
+          bimbingan={bimbingan}
+          unreadNotif={unreadNotif}
+        />
       );
     }
     // Dashboard TU: ringkas saja — fokus ke pemeriksaan berkas Seminar Proposal.

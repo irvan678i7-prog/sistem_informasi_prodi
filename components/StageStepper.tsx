@@ -3,14 +3,20 @@ import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { TesisStage } from "@prisma/client";
 
+// Urutan tahap perjalanan tesis sesuai alur PPs UM Metro:
+// Judul → Proposal → Bimbingan → Seminar → Revisi → KUT → Ujian → Selesai.
+//
+// Urutan di sini SENGAJA berbeda dari urutan deklarasi enum TesisStage di
+// Prisma (yang tidak boleh diubah tanpa migrasi). Stepper memakai daftar ini
+// sebagai satu-satunya sumber urutan tampilan, jadi enum database tetap utuh.
 const STAGES: { key: TesisStage; label: string }[] = [
   { key: "JUDUL", label: "Judul" },
   { key: "PROPOSAL", label: "Proposal" },
-  { key: "SEMINAR_PROPOSAL", label: "Seminar" },
   { key: "BIMBINGAN", label: "Bimbingan" },
-  { key: "KUT", label: "KUT" },
-  { key: "SIDANG", label: "Sidang" },
+  { key: "SEMINAR_PROPOSAL", label: "Seminar" },
   { key: "REVISI", label: "Revisi" },
+  { key: "KUT", label: "KUT" },
+  { key: "SIDANG", label: "Ujian" },
   { key: "SELESAI", label: "Selesai" },
 ];
 

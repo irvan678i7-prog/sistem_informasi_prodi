@@ -1,10 +1,21 @@
-// Kaprodi dashboard: jumlah dosen & mahasiswa + ringkasan progres tesis prodi.
+// Kaprodi dashboard: jumlah dosen & mahasiswa + ringkasan progres tesis prodi,
+// ditambah blok "Bimbingan Saya" karena kaprodi juga bisa menjadi PA /
+// Pembimbing 1 / Pembimbing 2 (perannya sama seperti dosen).
 
 import Link from "next/link";
-import { Users, GraduationCap, BookOpen, Bell } from "lucide-react";
+import {
+  Users,
+  GraduationCap,
+  BookOpen,
+  Bell,
+  ClipboardList,
+} from "lucide-react";
 import { StageBadge } from "@/components/ui/status-badge";
 import { formatDateTime } from "@/lib/utils";
-import type { KaprodiDashboardData } from "@/lib/dashboard";
+import type {
+  KaprodiDashboardData,
+  DosenDashboardData,
+} from "@/lib/dashboard";
 import {
   DashboardHero,
   StatCard,
@@ -26,21 +37,25 @@ type User = {
 const STAGE_META: Record<string, { label: string; color: string }> = {
   JUDUL: { label: "Pengajuan Judul", color: "#6366f1" },
   PROPOSAL: { label: "Proposal", color: "#0ea5e9" },
-  SEMINAR_PROPOSAL: { label: "Seminar Proposal", color: "#06b6d4" },
   BIMBINGAN: { label: "Bimbingan", color: "#14b8a6" },
-  KUT: { label: "Kelayakan Ujian", color: "#f59e0b" },
-  SIDANG: { label: "Sidang", color: "#8b5cf6" },
+  SEMINAR_PROPOSAL: { label: "Seminar Proposal", color: "#06b6d4" },
   REVISI: { label: "Revisi", color: "#f43f5e" },
+  KUT: { label: "Kelayakan Ujian", color: "#f59e0b" },
+  SIDANG: { label: "Ujian Tesis", color: "#8b5cf6" },
   SELESAI: { label: "Selesai", color: "#22c55e" },
 };
 
 export function KaprodiDashboard({
   user,
   data,
+  bimbingan,
   unreadNotif,
 }: {
   user: User;
   data: KaprodiDashboardData;
+  // Ringkasan bimbingan pribadi kaprodi (opsional agar komponen tetap dapat
+  // dipakai tanpa data ini).
+  bimbingan?: DosenDashboardData;
   unreadNotif: number;
 }) {
   const { dosenCount, mahasiswaCount, tesisTotal, stageCounts, recentTheses } =
@@ -52,6 +67,12 @@ export function KaprodiDashboard({
     value: s.count,
     color: STAGE_META[s.stage]?.color ?? "#94a3b8",
   }));
+
+  // Blok bimbingan pribadi hanya ditampilkan bila kaprodi memang membimbing
+  // atau punya paraf tertunda, supaya dashboard tidak penuh angka nol.
+  const showBimbingan =
+    !!bimbingan &&
+    (bimbingan.bimbinganCount > 0 || bimbingan.pendingParaf > 0);
 
   return (
     <div className="space-y-6">
@@ -83,6 +104,63 @@ export function KaprodiDashboard({
           href="/notifikasi"
         />
       </div>
+
+      {showBimbingan && bimbingan && (
+        <SectionCard
+          title="Bimbingan Saya"
+          description="Mahasiswa yang Anda bimbing sebagai PA / Pembimbing 1 / Pembimbing 2"
+          action={
+            <Link href="/bimbingan/artikel" className="btn-ghost text-sm">
+              Kartu Bimbingan
+            </Link>
+          }
+        >
+          <div className="space-y-4">
+            <div className="grid sm:grid-cols-2 gap-4">
+              <StatCard
+                icon={BookOpen}
+                label="Mahasiswa Bimbingan"
+                value={bimbingan.bimbinganCount}
+                accent="brand"
+                href="/bimbingan/artikel"
+              />
+              <StatCard
+                icon={ClipboardList}
+                label="Menunggu Paraf Anda"
+                value={bimbingan.pendingParaf}
+                accent="amber"
+              />
+            </div>
+
+            {bimbingan.recentTheses.length === 0 ? (
+              <EmptyState>Belum ada mahasiswa bimbingan.</EmptyState>
+            ) : (
+              <ul className="divide-y divide-slate-200">
+                {bimbingan.recentTheses.map((t) => (
+                  <li key={t.id} className="py-2.5 flex items-center gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-slate-900 truncate">
+                        {t.mahasiswa.name}
+                      </p>
+                      <p className="text-xs text-slate-500 truncate">
+                        NPM {t.mahasiswa.nimNip} ·{" "}
+                        {t.judulFinal || t.judul1 || "(judul belum ada)"}
+                      </p>
+                    </div>
+                    <StageBadge stage={t.stage} />
+                    <Link
+                      href={`/bimbingan/artikel/${t.id}`}
+                      className="btn-ghost text-sm"
+                    >
+                      Nilai
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </SectionCard>
+      )}
 
       <div className="grid lg:grid-cols-2 gap-4">
         <SectionCard
@@ -152,6 +230,9 @@ export function KaprodiDashboard({
         </Link>
         <Link href="/tesis/sk-pembimbing" className="btn-secondary">
           SK Pembimbing
+        </Link>
+        <Link href="/bimbingan/artikel" className="btn-secondary">
+          Kartu Bimbingan
         </Link>
         <Link href="/surat" className="btn-secondary">
           Antrian Surat
