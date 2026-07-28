@@ -6,6 +6,24 @@ const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
 export const STORAGE_BUCKET =
   process.env.SUPABASE_STORAGE_BUCKET?.trim() || "documents";
 
+/**
+ * Mode privat untuk Storage.
+ *
+ * Bucket `documents` menyimpan berkas sensitif: draft tesis, surat, SK,
+ * berkas persyaratan mahasiswa. Selama bucket bersifat publik, siapa pun yang
+ * memiliki (atau menebak) URL-nya bisa mengunduh berkas tanpa login.
+ *
+ * Bila `SUPABASE_STORAGE_PRIVATE="true"`:
+ *  - bucket dibuat / diubah menjadi non-publik, dan
+ *  - hasil upload mengembalikan URL aplikasi `/api/berkas/<path>` yang
+ *    memeriksa sesi lalu meneruskan ke signed URL berumur pendek.
+ *
+ * Default masih `false` karena URL publik lama sudah tersimpan di database dan
+ * pratinjau dokumen Word memakai Office Online (butuh URL yang dapat diakses
+ * dari luar). Lihat catatan migrasi di .env.example.
+ */
+export const STORAGE_PRIVATE = process.env.SUPABASE_STORAGE_PRIVATE === "true";
+
 let _client: SupabaseClient | null = null;
 let _bucketReady = false;
 
@@ -24,7 +42,7 @@ export function getSupabaseAdmin(): SupabaseClient {
 }
 
 /**
- * Idempotently ensure the storage bucket exists.
+ * Idempotently ensure the storage bucket exists (dan sesuai mode privat).
  * Cached per-process so we only call Supabase once per cold start.
  */
 export async function ensureBucket(): Promise<void> {
@@ -41,13 +59,24 @@ export async function ensureBucket(): Promise<void> {
     const { error: createErr } = await supabase.storage.createBucket(
       STORAGE_BUCKET,
       {
-        public: true,
+        public: !STORAGE_PRIVATE,
         fileSizeLimit: 20 * 1024 * 1024, // 20 MB
       },
     );
     if (createErr) {
       throw new Error(
         `Failed to create Supabase bucket "${STORAGE_BUCKET}": ${createErr.message}`,
+      );
+    }
+  } else if (STORAGE_PRIVATE && data.public) {
+    // Bucket lama masih publik → tutup aksesnya.
+    const { error: updateErr } = await supabase.storage.updateBucket(
+      STORAGE_BUCKET,
+      { public: false },
+    );
+    if (updateErr) {
+      throw new Error(
+        `Failed to make Supabase bucket "${STORAGE_BUCKET}" private: ${updateErr.message}`,
       );
     }
   }

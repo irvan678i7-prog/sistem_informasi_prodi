@@ -1,4 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { verifySessionToken } from "@/lib/edgeJwt";
+import { trySessionSecret } from "@/lib/sessionSecret";
+
+const SESSION_COOKIE = "sipro_session";
 
 const PUBLIC_PREFIXES = [
   "/login",
@@ -22,17 +26,40 @@ function isPublic(pathname: string): boolean {
   return false;
 }
 
-export function middleware(req: NextRequest) {
+/**
+ * Gerbang autentikasi.
+ *
+ * Sebelumnya middleware hanya memeriksa apakah cookie `sipro_session` ADA,
+ * tanpa memverifikasi isinya — sehingga cookie berisi teks acak pun lolos.
+ * Sekarang tanda tangan HMAC dan masa berlaku token diverifikasi memakai Web
+ * Crypto (kompatibel Edge Runtime). Cookie yang tidak sah langsung dihapus
+ * supaya pengguna tidak terjebak di siklus redirect dengan cookie basi.
+ *
+ * Catatan: otorisasi per-role tetap dilakukan di server component / server
+ * action / route handler (lihat requireRole di lib/auth.ts). Middleware hanya
+ * memastikan pemanggil punya sesi yang sah.
+ */
+export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   if (isPublic(pathname)) return NextResponse.next();
 
-  const token = req.cookies.get("sipro_session")?.value;
-  if (!token) {
+  const token = req.cookies.get(SESSION_COOKIE)?.value;
+  const secret = trySessionSecret();
+  // secret === null hanya terjadi bila JWT_SECRET salah konfigurasi di
+  // production. Dalam kondisi itu kita menolak SEMUA permintaan (fail closed)
+  // alih-alih menerima token yang tidak bisa diverifikasi.
+  const session = secret ? await verifySessionToken(token, secret) : null;
+
+  if (!session?.uid) {
     const url = req.nextUrl.clone();
     url.pathname = pathname.startsWith("/admin") ? "/admin/login" : "/login";
+    url.search = "";
     url.searchParams.set("next", pathname);
-    return NextResponse.redirect(url);
+    const res = NextResponse.redirect(url);
+    if (token) res.cookies.delete(SESSION_COOKIE);
+    return res;
   }
+
   return NextResponse.next();
 }
 

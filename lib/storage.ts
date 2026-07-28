@@ -1,12 +1,64 @@
-import { getSupabaseAdmin, STORAGE_BUCKET, ensureBucket } from "./supabase";
+import {
+  getSupabaseAdmin,
+  STORAGE_BUCKET,
+  STORAGE_PRIVATE,
+  ensureBucket,
+} from "./supabase";
 
 /** Batas maksimal ukuran file upload mahasiswa (2 MB). */
 export const MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
 export const MAX_UPLOAD_LABEL = "2MB";
 
+/** Prefiks rute aplikasi yang menyajikan berkas privat setelah cek sesi. */
+export const FILE_ROUTE_PREFIX = "/api/berkas";
+
+/** Penanda pada URL publik Supabase: .../storage/v1/object/public/<bucket>/ */
+const PUBLIC_URL_MARKER = `/storage/v1/object/public/${STORAGE_BUCKET}/`;
+
+/** URL aplikasi (terautentikasi) untuk sebuah path di Storage. */
+export function fileRouteUrl(path: string): string {
+  const encoded = path
+    .split("/")
+    .map((segment) => encodeURIComponent(segment))
+    .join("/");
+  return `${FILE_ROUTE_PREFIX}/${encoded}`;
+}
+
 /**
- * Upload a raw buffer to Supabase Storage and return its public URL.
+ * Ambil path Storage dari sebuah URL publik Supabase.
+ * Mengembalikan `null` bila format URL tidak dikenali.
+ */
+export function storagePathFromPublicUrl(rawUrl: string): string | null {
+  if (typeof rawUrl !== "string" || rawUrl.length === 0) return null;
+  const index = rawUrl.indexOf(PUBLIC_URL_MARKER);
+  if (index < 0) return null;
+  const raw = rawUrl.slice(index + PUBLIC_URL_MARKER.length).split("?")[0];
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return raw;
+  }
+}
+
+/**
+ * Ubah URL berkas yang tersimpan di database menjadi tautan yang aman dipakai
+ * di UI. Pada mode privat, URL publik lama dialihkan ke rute terautentikasi
+ * `/api/berkas/...`; URL yang sudah memakai rute itu (atau format lain)
+ * dibiarkan apa adanya.
+ */
+export function fileHref(rawUrl: string): string {
+  if (!STORAGE_PRIVATE) return rawUrl;
+  if (rawUrl.startsWith(FILE_ROUTE_PREFIX)) return rawUrl;
+  const path = storagePathFromPublicUrl(rawUrl);
+  return path ? fileRouteUrl(path) : rawUrl;
+}
+
+/**
+ * Upload a raw buffer to Supabase Storage and return its URL.
  * Bucket is auto-created on first use (see ensureBucket()).
+ *
+ * Pada mode privat, URL yang dikembalikan adalah rute aplikasi
+ * `/api/berkas/<path>` — bukan URL publik Supabase.
  */
 export async function uploadBufferToSupabase(
   path: string,
@@ -30,6 +82,10 @@ export async function uploadBufferToSupabase(
     );
   }
 
+  if (STORAGE_PRIVATE) {
+    return { url: fileRouteUrl(path), path };
+  }
+
   const { data } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(path);
   return { url: data.publicUrl, path };
 }
@@ -46,7 +102,7 @@ export async function uploadFileToSupabase(
 
 /**
  * Generate a short-lived signed URL for a private object.
- * Useful if you later flip the bucket to private for sensitive documents.
+ * Dipakai oleh rute `/api/berkas/[...path]` setelah sesi diverifikasi.
  */
 export async function getSignedUrl(
   path: string,
@@ -65,27 +121,27 @@ export async function getSignedUrl(
 }
 
 /**
- * Best-effort: hapus objek Storage berdasarkan public URL-nya. Dipakai saat
- * memangkas riwayat berkas (mis. setelah kedua pembimbing meng-ACC bagian,
- * hanya 1 berkas final yang disimpan). Path storage diambil dari bagian
- * setelah "/object/public/<bucket>/" pada URL publik Supabase. Aman dipanggil
- * dengan URL yang formatnya tak dikenal — URL seperti itu dilewati.
+ * Best-effort: hapus objek Storage berdasarkan URL yang tersimpan di database.
+ * Dipakai saat memangkas riwayat berkas (mis. setelah kedua pembimbing meng-ACC
+ * bagian, hanya 1 berkas final yang disimpan). Mendukung URL publik Supabase
+ * maupun URL rute aplikasi `/api/berkas/...`. URL dengan format tak dikenal
+ * dilewati.
  */
 export async function deletePublicUrls(urls: string[]): Promise<void> {
   const clean = urls.filter((u) => typeof u === "string" && u.length > 0);
   if (clean.length === 0) return;
   const supabase = getSupabaseAdmin();
-  const marker = `/storage/v1/object/public/${STORAGE_BUCKET}/`;
   const paths = clean
     .map((u) => {
-      const i = u.indexOf(marker);
-      if (i < 0) return null;
-      const raw = u.slice(i + marker.length).split("?")[0];
-      try {
-        return decodeURIComponent(raw);
-      } catch {
-        return raw;
+      if (u.startsWith(`${FILE_ROUTE_PREFIX}/`)) {
+        const raw = u.slice(FILE_ROUTE_PREFIX.length + 1).split("?")[0];
+        try {
+          return decodeURIComponent(raw);
+        } catch {
+          return raw;
+        }
       }
+      return storagePathFromPublicUrl(u);
     })
     .filter((p): p is string => !!p);
   if (paths.length === 0) return;
