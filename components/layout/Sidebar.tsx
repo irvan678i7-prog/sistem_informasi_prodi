@@ -13,6 +13,8 @@ import {
   FileText,
   BookOpen,
   ClipboardList,
+  PenLine,
+  Contact,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Role } from "@prisma/client";
@@ -36,6 +38,14 @@ const NAV: NavItem[] = [
     href: "/tesis",
     label: "Tesis",
     icon: GraduationCap,
+    roles: ["MAHASISWA", "DOSEN", "KAPRODI"],
+  },
+  // Pengajuan judul — mahasiswa perlu akses langsung, termasuk saat PA/Kaprodi
+  // meminta revisi (status kembali DRAFT sehingga formulir terbuka lagi).
+  {
+    href: "/tesis/judul",
+    label: "Pengajuan Judul",
+    icon: PenLine,
     roles: ["MAHASISWA", "DOSEN", "KAPRODI"],
   },
   // Menu kartu bimbingan mahasiswa: labelnya mengikuti jalur yang dipilih
@@ -73,6 +83,13 @@ const NAV: NavItem[] = [
     label: "Cek Berkas Ujian",
     icon: FileText,
     roles: ["TU"],
+  },
+  // Daftar kontak mahasiswa bimbingan (nama, jalur, tahap, WhatsApp).
+  {
+    href: "/bimbingan/mahasiswa",
+    label: "Mahasiswa Bimbingan",
+    icon: Contact,
+    roles: ["DOSEN", "KAPRODI"],
   },
   {
     href: "/bimbingan/artikel",
@@ -156,9 +173,18 @@ export function Sidebar({
         </div>
         <nav className="space-y-1">
           {items.map((item) => {
+            // Menu "Tesis" (/tesis) tidak boleh ikut aktif ketika berada di
+            // sub-halaman yang punya menunya sendiri (mis. /tesis/judul).
+            const hasOwnMenu = items.some(
+              (o) => o.href !== item.href && o.href.startsWith(item.href + "/"),
+            );
             const active =
               pathname === item.href ||
-              (item.href !== "/dashboard" && pathname.startsWith(item.href));
+              (item.href !== "/dashboard" &&
+                pathname.startsWith(item.href + "/")) ||
+              (item.href !== "/dashboard" &&
+                !hasOwnMenu &&
+                pathname.startsWith(item.href));
             const Icon = item.icon;
             return (
               <Link
