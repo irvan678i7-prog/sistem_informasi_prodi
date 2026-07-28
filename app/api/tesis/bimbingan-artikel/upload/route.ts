@@ -42,6 +42,18 @@ export async function POST(req: Request) {
   if (!tesis || tesis.mahasiswaId !== session.uid)
     return NextResponse.json({ message: "Tidak diizinkan" }, { status: 403 });
 
+  // Guard server-side: kartu bimbingan baru aktif setelah judul di-ACC
+  // (difinalisasi Kaprodi). Halaman mahasiswa sudah menyembunyikan lembar
+  // kerja, tapi API tetap harus menolak agar tidak bisa dilewati.
+  if (tesis.judulStatus !== "APPROVED")
+    return NextResponse.json(
+      {
+        message:
+          "Judul belum di-ACC (difinalisasi Kaprodi). Kartu bimbingan belum dapat digunakan.",
+      },
+      { status: 403 },
+    );
+
   const ab = await file.arrayBuffer();
   const buf = Buffer.from(ab);
   const path = `bimbingan-artikel/${session.uid}/${section}-${Date.now()}-${file.name}`;
