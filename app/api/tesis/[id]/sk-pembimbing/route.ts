@@ -35,6 +35,16 @@ export async function POST(
   });
   if (!tesis) return NextResponse.json({ message: "Tidak ditemukan" }, { status: 404 });
 
+  // Pembimbing hanya boleh ditetapkan setelah judul difinalisasi (ACC).
+  if (tesis.judulStatus !== "APPROVED")
+    return NextResponse.json(
+      {
+        message:
+          "Judul belum difinalisasi Kaprodi. Tetapkan pembimbing setelah judul di-ACC.",
+      },
+      { status: 409 },
+    );
+
   const signer = await prisma.user.findUnique({ where: { id: session.uid } });
   if (!signer)
     return NextResponse.json({ message: "Signer tidak valid" }, { status: 400 });

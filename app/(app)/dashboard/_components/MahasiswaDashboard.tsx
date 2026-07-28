@@ -65,6 +65,23 @@ export function MahasiswaDashboard({
         nimNip={user.nimNip}
       />
 
+      {!tesis && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-brand-200 bg-brand-50 p-5">
+          <div>
+            <p className="font-semibold text-slate-900">
+              Mulai proses tesis Anda
+            </p>
+            <p className="text-sm text-slate-600">
+              Langkah pertama: pilih Dosen Pembimbing Akademik (PA) lalu ajukan 3
+              rencana judul.
+            </p>
+          </div>
+          <Link href="/tesis/judul" className="btn-primary">
+            Ajukan Judul Sekarang
+          </Link>
+        </div>
+      )}
+
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           icon={GraduationCap}
