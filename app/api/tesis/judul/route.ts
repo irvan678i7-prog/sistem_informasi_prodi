@@ -38,6 +38,8 @@ export async function POST(req: Request) {
   // Lock editing once the judul has been approved (by PA or finalised by
   // Kaprodi). Approved-tanpa-revisi tidak dapat diubah lagi; jika perlu diubah,
   // reviewer harus meminta revisi terlebih dahulu (status kembali ke DRAFT).
+  // Status DRAFT (diminta revisi), REJECTED (ditolak), dan SUBMITTED (masih
+  // menunggu PA) tetap dapat disunting oleh mahasiswa.
   const existing = await prisma.tesis.findUnique({
     where: { mahasiswaId: session.uid },
     select: { judulStatus: true },
@@ -87,6 +89,11 @@ export async function POST(req: Request) {
       paId: parsed.paId,
       track: parsed.track,
       judulStatus: "SUBMITTED",
+      // Bila sebelumnya PA sudah memilih judul final lalu Kaprodi meminta
+      // revisi, judul final lama harus dikosongkan — kalau tidak, halaman
+      // lain (kartu bimbingan, SK, surat) masih menampilkan judul usang
+      // padahal pengajuan sedang diproses ulang dari awal.
+      judulFinal: null,
       timeline: {
         create: {
           stage: "JUDUL_RESUBMITTED",
